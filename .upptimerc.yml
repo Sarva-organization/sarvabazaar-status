@@ -1,31 +1,216 @@
-# Change these first
-owner: upptime # Your GitHub organization or username, where this repository lives
-repo: upptime # The name of this repository
+owner: Sarva-organization
+repo: sarvabazaar-status
+user-agent: Shahir-47
+
+# Explicit allowlist (recommended over relying on automatic detection) of
+# every repo secret referenced below via $NAME syntax.
+secrets:
+  - HEALTH_CHECK_SECRET
+
+assignees:
+  - Shahir-47
+
+# Keep every incident in history, even sub-15-minute blips that Upptime would
+# otherwise silently delete — more data, not less.
+skipDeleteIssues: true
 
 sites:
-  - name: Google
-    url: https://www.google.com
-  - name: Wikipedia
-    url: https://en.wikipedia.org
-  - name: Hacker News
-    url: https://news.ycombinator.com
-  - name: Secret Site
-    url: $SECRET_SITE
+  # Real SSR page, actually fetches live vendor data from Firestore
+  # (getLiveVendors, revalidate=60) — not static marketing copy. Checked from
+  # multiple world regions via Globalping instead of a single GitHub Actions
+  # runner location, since it's the single most important page in the app.
+  - name: Website
+    url: https://www.sarvabazaar.com
+    type: globalping
+    location: World
+
+  # Real SSR/public-API pages that are genuinely reachable with no auth — a
+  # plain GET here is a meaningful signal. Dashboards/copilot pages are
+  # deliberately excluded: auth in this app is client-side only (Firebase
+  # onAuthStateChanged + router.replace), so an unauthenticated GET to e.g.
+  # /customer/dashboard always returns 200 with a loading shell regardless of
+  # whether the app is actually healthy — a plain status-code check there
+  # would be a permanently-green no-op, not a weaker check.
+  - name: Guest Shop
+    url: https://www.sarvabazaar.com/order
+
+  - name: Vendor Listing
+    url: https://www.sarvabazaar.com/order/vendors
+
+  - name: Order Status Lookup
+    url: https://www.sarvabazaar.com/order-status
+
+  - name: Customer Sign In
+    url: https://www.sarvabazaar.com/customer/auth/signin
+
+  - name: Vendor Sign In
+    url: https://www.sarvabazaar.com/vendor/auth/signin
+
+  - name: Driver Sign In
+    url: https://www.sarvabazaar.com/driver/auth/signin
+
+  - name: Customer Signup
+    url: https://www.sarvabazaar.com/customer/auth/signup
+
+  - name: Vendor Signup
+    url: https://www.sarvabazaar.com/vendor/auth/signup
+
+  - name: Driver Signup
+    url: https://www.sarvabazaar.com/driver/auth/signup
+
+  # Public route handler with real, uncached-on-miss Firestore reads
+  # (vendors + inventory collections) — no auth required. Backs /order and
+  # /order/vendors client-side.
+  - name: Public Catalog API
+    url: https://www.sarvabazaar.com/api/catalog
+
+  # ---------------- Our own dependency health checks ----------------
+  # All gated by HEALTH_CHECK_SECRET; maxResponseTime tightened from the 30s
+  # default since these are simple API pings that should be fast — a slow
+  # response here (not just an outright failure) is itself a useful signal.
+
+  - name: Payments (Stripe)
+    url: https://www.sarvabazaar.com/api/health/stripe
+    maxResponseTime: 5000
+    headers:
+      - "Authorization: Bearer $HEALTH_CHECK_SECRET"
+
+  - name: Firestore
+    url: https://www.sarvabazaar.com/api/health/firestore
+    maxResponseTime: 5000
+    headers:
+      - "Authorization: Bearer $HEALTH_CHECK_SECRET"
+
+  - name: Firebase Auth
+    url: https://www.sarvabazaar.com/api/health/firebase-auth
+    maxResponseTime: 5000
+    headers:
+      - "Authorization: Bearer $HEALTH_CHECK_SECRET"
+
+  - name: Firebase App Check
+    url: https://www.sarvabazaar.com/api/health/firebase-appcheck
+    maxResponseTime: 5000
+    headers:
+      - "Authorization: Bearer $HEALTH_CHECK_SECRET"
+
+  - name: Firebase Storage
+    url: https://www.sarvabazaar.com/api/health/firebase-storage
+    maxResponseTime: 5000
+    headers:
+      - "Authorization: Bearer $HEALTH_CHECK_SECRET"
+
+  - name: Search (Algolia)
+    url: https://www.sarvabazaar.com/api/health/algolia
+    maxResponseTime: 5000
+    headers:
+      - "Authorization: Bearer $HEALTH_CHECK_SECRET"
+
+  - name: AI (OpenAI)
+    url: https://www.sarvabazaar.com/api/health/openai
+    maxResponseTime: 8000
+    headers:
+      - "Authorization: Bearer $HEALTH_CHECK_SECRET"
+
+  - name: Maps
+    url: https://www.sarvabazaar.com/api/health/maps
+    maxResponseTime: 5000
+    headers:
+      - "Authorization: Bearer $HEALTH_CHECK_SECRET"
+
+  - name: Support (GitHub API)
+    url: https://www.sarvabazaar.com/api/health/github
+    maxResponseTime: 5000
+    headers:
+      - "Authorization: Bearer $HEALTH_CHECK_SECRET"
+
+  - name: Email Alerts Config
+    url: https://www.sarvabazaar.com/api/health/email
+    maxResponseTime: 5000
+    headers:
+      - "Authorization: Bearer $HEALTH_CHECK_SECRET"
+
+  - name: Checkout Flow
+    url: https://www.sarvabazaar.com/api/health/flow-checkout
+    maxResponseTime: 8000
+    headers:
+      - "Authorization: Bearer $HEALTH_CHECK_SECRET"
+
+  - name: Search Flow
+    url: https://www.sarvabazaar.com/api/health/flow-search
+    maxResponseTime: 5000
+    headers:
+      - "Authorization: Bearer $HEALTH_CHECK_SECRET"
+
+  - name: Order Flow
+    url: https://www.sarvabazaar.com/api/health/flow-order
+    maxResponseTime: 8000
+    headers:
+      - "Authorization: Bearer $HEALTH_CHECK_SECRET"
+
+  - name: Vendor Metrics Flow
+    url: https://www.sarvabazaar.com/api/health/flow-vendor-metrics
+    maxResponseTime: 5000
+    headers:
+      - "Authorization: Bearer $HEALTH_CHECK_SECRET"
+
+  - name: Driver Metrics Flow
+    url: https://www.sarvabazaar.com/api/health/flow-driver-metrics
+    maxResponseTime: 5000
+    headers:
+      - "Authorization: Bearer $HEALTH_CHECK_SECRET"
+
+  - name: Customer Metrics Flow
+    url: https://www.sarvabazaar.com/api/health/flow-customer-metrics
+    maxResponseTime: 5000
+    headers:
+      - "Authorization: Bearer $HEALTH_CHECK_SECRET"
+
+  - name: POS Shipment Intake Function
+    url: https://www.sarvabazaar.com/api/health/cloud-function-shipment-intake
+    maxResponseTime: 8000
+    headers:
+      - "Authorization: Bearer $HEALTH_CHECK_SECRET"
+
+  - name: Guest Order Lookup Flow
+    url: https://www.sarvabazaar.com/api/health/flow-guest-order-lookup
+    maxResponseTime: 8000
+    headers:
+      - "Authorization: Bearer $HEALTH_CHECK_SECRET"
+
+  # ---------------- Upstream vendor status, checked directly ----------------
+  # Confirmed via direct curl (not assumed) which vendors expose a real
+  # public JSON status API vs. which don't:
+  #   - OpenAI, GitHub: real Statuspage.io API at /api/v2/status.json
+  #   - EmailJS: real Better Stack API at /index.json (different field names)
+  #   - Stripe, Algolia: their status pages are custom-built SPAs — hitting
+  #     /api/v2/status.json returns their HTML app shell, not real data, so
+  #     these are plain page-load checks only (weaker signal: proves their
+  #     status page is reachable, not a parsed operational/degraded state).
+  # This answers "is it them or us" when one of our own checks above fails.
+
+  - name: Upstream - Vercel Status
+    url: https://www.vercel-status.com/api/v2/status.json
+    __dangerous__body_down_if_text_missing: '"indicator":"none"'
+
+  - name: Upstream - OpenAI Status
+    url: https://status.openai.com/api/v2/status.json
+    __dangerous__body_down_if_text_missing: '"indicator":"none"'
+
+  - name: Upstream - GitHub Status
+    url: https://www.githubstatus.com/api/v2/status.json
+    __dangerous__body_down_if_text_missing: '"indicator":"none"'
+
+  - name: Upstream - EmailJS Status
+    url: https://status.emailjs.com/index.json
+    __dangerous__body_down_if_text_missing: '"aggregate_state":"operational"'
+
+  - name: Upstream - Stripe Status (page only)
+    url: https://status.stripe.com/
+
+  - name: Upstream - Algolia Status (page only)
+    url: https://status.algolia.com/
 
 status-website:
-  # Add your custom domain name, or remove the `cname` line if you don't have a domain
-  # Uncomment the `baseUrl` line if you don't have a custom domain and add your repo name there
-  cname: demo.upptime.js.org
-  # baseUrl: /your-repo-name
-  logoUrl: https://raw.githubusercontent.com/upptime/upptime.js.org/master/static/img/icon.svg
-  name: Upptime
-  introTitle: "**Upptime** is the open-source uptime monitor and status page, powered entirely by GitHub."
-  introMessage: This is a sample status page which uses **real-time** data from our [GitHub repository](https://github.com/upptime/upptime). No server required — just GitHub Actions, Issues, and Pages. [**Get your own for free**](https://github.com/upptime/upptime)
-  navbar:
-    - title: Status
-      href: /
-    - title: GitHub
-      href: https://github.com/$OWNER/$REPO
-
-# Upptime also supports notifications, assigning issues, and more
-# See https://upptime.js.org/docs/configuration
+  cname: status.sarvabazaar.com
+  name: Sarva Bazaar Status
+  introTitle: "**Sarva Bazaar Status**"
