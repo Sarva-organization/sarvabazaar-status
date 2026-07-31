@@ -1,7 +1,7 @@
 url: https://www.sarvabazaar.com/api/health/flow-customer-metrics
-status: down
-code: 401
-responseTime: 69
-lastUpdated: 2026-07-31T02:20:26.332Z
+status: up
+code: 200
+responseTime: 216
+lastUpdated: 2026-07-31T02:33:23.215Z
 startTime: 2026-07-31T02:20:14.073Z
 generator: Upptime <https://github.com/upptime/upptime>
