@@ -165,12 +165,6 @@ sites:
     headers:
       - "Authorization: Bearer $HEALTH_CHECK_SECRET"
 
-  - name: POS Shipment Intake Function
-    url: https://www.sarvabazaar.com/api/health/cloud-function-shipment-intake
-    maxResponseTime: 8000
-    headers:
-      - "Authorization: Bearer $HEALTH_CHECK_SECRET"
-
   - name: Guest Order Lookup Flow
     url: https://www.sarvabazaar.com/api/health/flow-guest-order-lookup
     maxResponseTime: 8000
