@@ -1,7 +1,7 @@
 url: https://www.sarvabazaar.com/api/health/maps
-status: down
-code: 401
-responseTime: 170
-lastUpdated: 2026-07-31T02:18:33.373Z
+status: up
+code: 200
+responseTime: 376
+lastUpdated: 2026-07-31T02:32:59.768Z
 startTime: 2026-07-31T02:18:21.042Z
 generator: Upptime <https://github.com/upptime/upptime>
