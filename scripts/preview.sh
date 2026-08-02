@@ -47,11 +47,23 @@ npx ts-node pre-process.ts
 # limits (60/hr unauthenticated) — silently showing you production instead of
 # your changes. Point it at this server for the preview only; config.json is
 # regenerated on every run and is inside the gitignored site/ directory.
+#
+# logoUrl and favicon are absolute (https://<cname>/...) on purpose: see the
+# comment beside them in .upptimerc.yml. Left alone they would load from the
+# live site during a preview, so they are pointed at this server too.
 echo "==> Rewriting config.path -> http://localhost:$PORT (preview only)"
 PORT="$PORT" node -e '
   const fs = require("fs"), f = "src/data/config.json";
   const c = JSON.parse(fs.readFileSync(f, "utf8"));
-  c.path = "http://localhost:" + process.env.PORT;
+  const local = "http://localhost:" + process.env.PORT;
+  const prod = c.path;
+  c.path = local;
+  const sw = c["status-website"] || {};
+  for (const k of ["logoUrl", "favicon", "faviconSvg"]) {
+    if (typeof sw[k] === "string" && sw[k].startsWith(prod)) {
+      sw[k] = local + sw[k].slice(prod.length);
+    }
+  }
   fs.writeFileSync(f, JSON.stringify(c, null, 2));
 '
 

@@ -249,8 +249,25 @@ status-website:
   # Rendered next to the wordmark in the masthead, so it reads "SARVA Status".
   # Also used as the browser tab title.
   name: Sarva Status
-  logoUrl: /favicon.png
-  favicon: /favicon.png
+  # These MUST stay absolute, not "/favicon.png".
+  # assets/ is copied into the site root only AFTER `npm run export` has run,
+  # so during the export crawl a root-relative path does not exist yet. Sapper
+  # fetches it, gets the SPA's 404 HTML back, and writes it as
+  # `export/favicon.png/index.html` -- creating a DIRECTORY named favicon.png.
+  # The asset copy that follows then dies with:
+  #   cp: copyFileSync: could not write to dest file (code=EISDIR)
+  # An absolute URL is a different origin from the export server, so the
+  # crawler skips it; the file still resolves at runtime because assets/ lands
+  # at the site root. scripts/preview.sh rewrites these to localhost so a local
+  # preview does not pull them from the live site.
+  logoUrl: https://status.sarvabazaar.com/favicon.png
+  # Tab icon. Kept as the .ico for parity with the main site, which serves
+  # /favicon.ico. Upptime hardcodes type="image/svg" and type="image/png" on
+  # its two icon links with no config knob to change them, so the declared
+  # MIME is wrong here; browsers sniff the bytes for rel=icon, so it renders.
+  # logoUrl above stays the PNG: that is the 56px masthead image, where the
+  # .ico's 32x32 would be upscaled.
+  favicon: https://status.sarvabazaar.com/favicon.ico
 
   # No introTitle: the masthead already names the page, so a second heading
   # would just repeat it.
@@ -396,6 +413,7 @@ status-website:
       letter-spacing: -0.01em;
       color: var(--sb-text);
       line-height: 1 !important;
+      margin-top: -1px !important;
     }
 
     body nav ul {
