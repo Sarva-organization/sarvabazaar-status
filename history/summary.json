@@ -18,7 +18,7 @@
     "dailyMinutesDown": {}
   },
   {
-    "name": "Guest Shop",
+    "name": "Guest Shopping",
     "url": "https://www.sarvabazaar.com/order",
     "icon": "https://icons.duckduckgo.com/ip3/www.sarvabazaar.com.ico",
     "slug": "guest-shop",
@@ -36,7 +36,7 @@
     "dailyMinutesDown": {}
   },
   {
-    "name": "Vendor Listing",
+    "name": "Shop Directory",
     "url": "https://www.sarvabazaar.com/order/vendors",
     "icon": "https://icons.duckduckgo.com/ip3/www.sarvabazaar.com.ico",
     "slug": "vendor-listing",
@@ -54,7 +54,7 @@
     "dailyMinutesDown": {}
   },
   {
-    "name": "Order Status Lookup",
+    "name": "Order Tracking",
     "url": "https://www.sarvabazaar.com/order-status",
     "icon": "https://icons.duckduckgo.com/ip3/www.sarvabazaar.com.ico",
     "slug": "order-status-lookup",
@@ -72,7 +72,7 @@
     "dailyMinutesDown": {}
   },
   {
-    "name": "Customer Sign In",
+    "name": "Customer Sign-In",
     "url": "https://www.sarvabazaar.com/customer/auth/signin",
     "icon": "https://icons.duckduckgo.com/ip3/www.sarvabazaar.com.ico",
     "slug": "customer-sign-in",
@@ -90,7 +90,7 @@
     "dailyMinutesDown": {}
   },
   {
-    "name": "Vendor Sign In",
+    "name": "Shop Owner Sign-In",
     "url": "https://www.sarvabazaar.com/vendor/auth/signin",
     "icon": "https://icons.duckduckgo.com/ip3/www.sarvabazaar.com.ico",
     "slug": "vendor-sign-in",
@@ -108,7 +108,7 @@
     "dailyMinutesDown": {}
   },
   {
-    "name": "Driver Sign In",
+    "name": "Driver Sign-In",
     "url": "https://www.sarvabazaar.com/driver/auth/signin",
     "icon": "https://icons.duckduckgo.com/ip3/www.sarvabazaar.com.ico",
     "slug": "driver-sign-in",
@@ -126,7 +126,7 @@
     "dailyMinutesDown": {}
   },
   {
-    "name": "Customer Signup",
+    "name": "Customer Registration",
     "url": "https://www.sarvabazaar.com/customer/auth/signup",
     "icon": "https://icons.duckduckgo.com/ip3/www.sarvabazaar.com.ico",
     "slug": "customer-signup",
@@ -144,7 +144,7 @@
     "dailyMinutesDown": {}
   },
   {
-    "name": "Vendor Signup",
+    "name": "Shop Owner Registration",
     "url": "https://www.sarvabazaar.com/vendor/auth/signup",
     "icon": "https://icons.duckduckgo.com/ip3/www.sarvabazaar.com.ico",
     "slug": "vendor-signup",
@@ -162,7 +162,7 @@
     "dailyMinutesDown": {}
   },
   {
-    "name": "Driver Signup",
+    "name": "Driver Registration",
     "url": "https://www.sarvabazaar.com/driver/auth/signup",
     "icon": "https://icons.duckduckgo.com/ip3/www.sarvabazaar.com.ico",
     "slug": "driver-signup",
@@ -180,7 +180,7 @@
     "dailyMinutesDown": {}
   },
   {
-    "name": "Public Catalog API",
+    "name": "Product Catalog",
     "url": "https://www.sarvabazaar.com/api/catalog",
     "icon": "https://icons.duckduckgo.com/ip3/www.sarvabazaar.com.ico",
     "slug": "public-catalog-api",
@@ -198,7 +198,7 @@
     "dailyMinutesDown": {}
   },
   {
-    "name": "Payments (Stripe)",
+    "name": "Payments",
     "url": "https://www.sarvabazaar.com/api/health/stripe",
     "icon": "https://icons.duckduckgo.com/ip3/www.sarvabazaar.com.ico",
     "slug": "payments-stripe",
@@ -218,7 +218,7 @@
     }
   },
   {
-    "name": "Firestore",
+    "name": "Database",
     "url": "https://www.sarvabazaar.com/api/health/firestore",
     "icon": "https://icons.duckduckgo.com/ip3/www.sarvabazaar.com.ico",
     "slug": "firestore",
@@ -238,7 +238,7 @@
     }
   },
   {
-    "name": "Firebase Auth",
+    "name": "Account Authentication",
     "url": "https://www.sarvabazaar.com/api/health/firebase-auth",
     "icon": "https://icons.duckduckgo.com/ip3/www.sarvabazaar.com.ico",
     "slug": "firebase-auth",
@@ -258,7 +258,7 @@
     }
   },
   {
-    "name": "Firebase App Check",
+    "name": "Abuse Protection",
     "url": "https://www.sarvabazaar.com/api/health/firebase-appcheck",
     "icon": "https://icons.duckduckgo.com/ip3/www.sarvabazaar.com.ico",
     "slug": "firebase-app-check",
@@ -278,7 +278,7 @@
     }
   },
   {
-    "name": "Firebase Storage",
+    "name": "Media Storage",
     "url": "https://www.sarvabazaar.com/api/health/firebase-storage",
     "icon": "https://icons.duckduckgo.com/ip3/www.sarvabazaar.com.ico",
     "slug": "firebase-storage",
@@ -298,7 +298,7 @@
     }
   },
   {
-    "name": "Search (Algolia)",
+    "name": "Product Search",
     "url": "https://www.sarvabazaar.com/api/health/algolia",
     "icon": "https://icons.duckduckgo.com/ip3/www.sarvabazaar.com.ico",
     "slug": "search-algolia",
@@ -318,7 +318,7 @@
     }
   },
   {
-    "name": "AI (OpenAI)",
+    "name": "Voice and AI Assistant",
     "url": "https://www.sarvabazaar.com/api/health/openai",
     "icon": "https://icons.duckduckgo.com/ip3/www.sarvabazaar.com.ico",
     "slug": "ai-open-ai",
@@ -338,7 +338,7 @@
     }
   },
   {
-    "name": "Maps",
+    "name": "Maps and Addresses",
     "url": "https://www.sarvabazaar.com/api/health/maps",
     "icon": "https://icons.duckduckgo.com/ip3/www.sarvabazaar.com.ico",
     "slug": "maps",
@@ -359,7 +359,7 @@
     }
   },
   {
-    "name": "Support (GitHub API)",
+    "name": "Incident Reporting",
     "url": "https://www.sarvabazaar.com/api/health/github",
     "icon": "https://icons.duckduckgo.com/ip3/www.sarvabazaar.com.ico",
     "slug": "support-git-hub-api",
@@ -379,7 +379,7 @@
     }
   },
   {
-    "name": "Email Alerts Config",
+    "name": "Email Notifications",
     "url": "https://www.sarvabazaar.com/api/health/email",
     "icon": "https://icons.duckduckgo.com/ip3/www.sarvabazaar.com.ico",
     "slug": "email-alerts-config",
@@ -399,7 +399,7 @@
     }
   },
   {
-    "name": "Checkout Flow",
+    "name": "Checkout",
     "url": "https://www.sarvabazaar.com/api/health/flow-checkout",
     "icon": "https://icons.duckduckgo.com/ip3/www.sarvabazaar.com.ico",
     "slug": "checkout-flow",
@@ -419,7 +419,7 @@
     }
   },
   {
-    "name": "Search Flow",
+    "name": "Search Results",
     "url": "https://www.sarvabazaar.com/api/health/flow-search",
     "icon": "https://icons.duckduckgo.com/ip3/www.sarvabazaar.com.ico",
     "slug": "search-flow",
@@ -439,7 +439,7 @@
     }
   },
   {
-    "name": "Order Flow",
+    "name": "Order Placement",
     "url": "https://www.sarvabazaar.com/api/health/flow-order",
     "icon": "https://icons.duckduckgo.com/ip3/www.sarvabazaar.com.ico",
     "slug": "order-flow",
@@ -459,7 +459,7 @@
     }
   },
   {
-    "name": "Vendor Metrics Flow",
+    "name": "Shop Owner Dashboard",
     "url": "https://www.sarvabazaar.com/api/health/flow-vendor-metrics",
     "icon": "https://icons.duckduckgo.com/ip3/www.sarvabazaar.com.ico",
     "slug": "vendor-metrics-flow",
@@ -479,7 +479,7 @@
     }
   },
   {
-    "name": "Driver Metrics Flow",
+    "name": "Driver Dashboard",
     "url": "https://www.sarvabazaar.com/api/health/flow-driver-metrics",
     "icon": "https://icons.duckduckgo.com/ip3/www.sarvabazaar.com.ico",
     "slug": "driver-metrics-flow",
@@ -499,7 +499,7 @@
     }
   },
   {
-    "name": "Customer Metrics Flow",
+    "name": "Customer Dashboard",
     "url": "https://www.sarvabazaar.com/api/health/flow-customer-metrics",
     "icon": "https://icons.duckduckgo.com/ip3/www.sarvabazaar.com.ico",
     "slug": "customer-metrics-flow",
@@ -519,7 +519,7 @@
     }
   },
   {
-    "name": "Guest Order Lookup Flow",
+    "name": "Guest Order Lookup",
     "url": "https://www.sarvabazaar.com/api/health/flow-guest-order-lookup",
     "icon": "https://icons.duckduckgo.com/ip3/www.sarvabazaar.com.ico",
     "slug": "guest-order-lookup-flow",
@@ -539,7 +539,7 @@
     }
   },
   {
-    "name": "Upstream - Vercel Status",
+    "name": "Vercel",
     "url": "https://www.vercel-status.com/api/v2/status.json",
     "icon": "https://icons.duckduckgo.com/ip3/www.vercel-status.com.ico",
     "slug": "upstream-vercel-status",
@@ -557,7 +557,7 @@
     "dailyMinutesDown": {}
   },
   {
-    "name": "Upstream - OpenAI Status",
+    "name": "OpenAI",
     "url": "https://status.openai.com/api/v2/status.json",
     "icon": "https://icons.duckduckgo.com/ip3/status.openai.com.ico",
     "slug": "upstream-open-ai-status",
@@ -575,7 +575,7 @@
     "dailyMinutesDown": {}
   },
   {
-    "name": "Upstream - GitHub Status",
+    "name": "GitHub",
     "url": "https://www.githubstatus.com/api/v2/status.json",
     "icon": "https://icons.duckduckgo.com/ip3/www.githubstatus.com.ico",
     "slug": "upstream-git-hub-status",
@@ -595,7 +595,7 @@
     }
   },
   {
-    "name": "Upstream - EmailJS Status",
+    "name": "EmailJS",
     "url": "https://status.emailjs.com/index.json",
     "icon": "https://icons.duckduckgo.com/ip3/status.emailjs.com.ico",
     "slug": "upstream-email-js-status",
@@ -613,7 +613,7 @@
     "dailyMinutesDown": {}
   },
   {
-    "name": "Upstream - Stripe Status (page only)",
+    "name": "Stripe",
     "url": "https://status.stripe.com/",
     "icon": "https://icons.duckduckgo.com/ip3/status.stripe.com.ico",
     "slug": "upstream-stripe-status-page-only",
@@ -631,7 +631,7 @@
     "dailyMinutesDown": {}
   },
   {
-    "name": "Upstream - Algolia Status (page only)",
+    "name": "Algolia",
     "url": "https://status.algolia.com/",
     "icon": "https://icons.duckduckgo.com/ip3/status.algolia.com.ico",
     "slug": "upstream-algolia-status-page-only",

@@ -20,6 +20,7 @@ sites:
   # multiple world regions via Globalping instead of a single GitHub Actions
   # runner location, since it's the single most important page in the app.
   - name: Website
+    slug: website
     url: https://www.sarvabazaar.com
     type: globalping
     location: World
@@ -31,37 +32,47 @@ sites:
   # /customer/dashboard always returns 200 with a loading shell regardless of
   # whether the app is actually healthy — a plain status-code check there
   # would be a permanently-green no-op, not a weaker check.
-  - name: Guest Shop
+  - name: Guest Shopping
+    slug: guest-shop
     url: https://www.sarvabazaar.com/order
 
-  - name: Vendor Listing
+  - name: Shop Directory
+    slug: vendor-listing
     url: https://www.sarvabazaar.com/order/vendors
 
-  - name: Order Status Lookup
+  - name: Order Tracking
+    slug: order-status-lookup
     url: https://www.sarvabazaar.com/order-status
 
-  - name: Customer Sign In
+  - name: Customer Sign-In
+    slug: customer-sign-in
     url: https://www.sarvabazaar.com/customer/auth/signin
 
-  - name: Vendor Sign In
+  - name: Shop Owner Sign-In
+    slug: vendor-sign-in
     url: https://www.sarvabazaar.com/vendor/auth/signin
 
-  - name: Driver Sign In
+  - name: Driver Sign-In
+    slug: driver-sign-in
     url: https://www.sarvabazaar.com/driver/auth/signin
 
-  - name: Customer Signup
+  - name: Customer Registration
+    slug: customer-signup
     url: https://www.sarvabazaar.com/customer/auth/signup
 
-  - name: Vendor Signup
+  - name: Shop Owner Registration
+    slug: vendor-signup
     url: https://www.sarvabazaar.com/vendor/auth/signup
 
-  - name: Driver Signup
+  - name: Driver Registration
+    slug: driver-signup
     url: https://www.sarvabazaar.com/driver/auth/signup
 
   # Public route handler with real, uncached-on-miss Firestore reads
   # (vendors + inventory collections) — no auth required. Backs /order and
   # /order/vendors client-side.
-  - name: Public Catalog API
+  - name: Product Catalog
+    slug: public-catalog-api
     url: https://www.sarvabazaar.com/api/catalog
 
   # ---------------- Our own dependency health checks ----------------
@@ -69,103 +80,120 @@ sites:
   # default since these are simple API pings that should be fast — a slow
   # response here (not just an outright failure) is itself a useful signal.
 
-  - name: Payments (Stripe)
+  - name: Payments
+    slug: payments-stripe
     url: https://www.sarvabazaar.com/api/health/stripe
     maxResponseTime: 5000
     headers:
       - "Authorization: Bearer $HEALTH_CHECK_SECRET"
 
-  - name: Firestore
+  - name: Database
+    slug: firestore
     url: https://www.sarvabazaar.com/api/health/firestore
     maxResponseTime: 5000
     headers:
       - "Authorization: Bearer $HEALTH_CHECK_SECRET"
 
-  - name: Firebase Auth
+  - name: Account Authentication
+    slug: firebase-auth
     url: https://www.sarvabazaar.com/api/health/firebase-auth
     maxResponseTime: 5000
     headers:
       - "Authorization: Bearer $HEALTH_CHECK_SECRET"
 
-  - name: Firebase App Check
+  - name: Abuse Protection
+    slug: firebase-app-check
     url: https://www.sarvabazaar.com/api/health/firebase-appcheck
     maxResponseTime: 5000
     headers:
       - "Authorization: Bearer $HEALTH_CHECK_SECRET"
 
-  - name: Firebase Storage
+  - name: Media Storage
+    slug: firebase-storage
     url: https://www.sarvabazaar.com/api/health/firebase-storage
     maxResponseTime: 5000
     headers:
       - "Authorization: Bearer $HEALTH_CHECK_SECRET"
 
-  - name: Search (Algolia)
+  - name: Product Search
+    slug: search-algolia
     url: https://www.sarvabazaar.com/api/health/algolia
     maxResponseTime: 5000
     headers:
       - "Authorization: Bearer $HEALTH_CHECK_SECRET"
 
-  - name: AI (OpenAI)
+  - name: Voice and AI Assistant
+    slug: ai-open-ai
     url: https://www.sarvabazaar.com/api/health/openai
     maxResponseTime: 8000
     headers:
       - "Authorization: Bearer $HEALTH_CHECK_SECRET"
 
-  - name: Maps
+  - name: Maps and Addresses
+    slug: maps
     url: https://www.sarvabazaar.com/api/health/maps
     maxResponseTime: 5000
     headers:
       - "Authorization: Bearer $HEALTH_CHECK_SECRET"
 
-  - name: Support (GitHub API)
+  - name: Incident Reporting
+    slug: support-git-hub-api
     url: https://www.sarvabazaar.com/api/health/github
     maxResponseTime: 5000
     headers:
       - "Authorization: Bearer $HEALTH_CHECK_SECRET"
 
-  - name: Email Alerts Config
+  - name: Email Notifications
+    slug: email-alerts-config
     url: https://www.sarvabazaar.com/api/health/email
     maxResponseTime: 5000
     headers:
       - "Authorization: Bearer $HEALTH_CHECK_SECRET"
 
-  - name: Checkout Flow
+  - name: Checkout
+    slug: checkout-flow
     url: https://www.sarvabazaar.com/api/health/flow-checkout
     maxResponseTime: 8000
     headers:
       - "Authorization: Bearer $HEALTH_CHECK_SECRET"
 
-  - name: Search Flow
+  - name: Search Results
+    slug: search-flow
     url: https://www.sarvabazaar.com/api/health/flow-search
     maxResponseTime: 5000
     headers:
       - "Authorization: Bearer $HEALTH_CHECK_SECRET"
 
-  - name: Order Flow
+  - name: Order Placement
+    slug: order-flow
     url: https://www.sarvabazaar.com/api/health/flow-order
     maxResponseTime: 8000
     headers:
       - "Authorization: Bearer $HEALTH_CHECK_SECRET"
 
-  - name: Vendor Metrics Flow
+  - name: Shop Owner Dashboard
+    slug: vendor-metrics-flow
     url: https://www.sarvabazaar.com/api/health/flow-vendor-metrics
     maxResponseTime: 5000
     headers:
       - "Authorization: Bearer $HEALTH_CHECK_SECRET"
 
-  - name: Driver Metrics Flow
+  - name: Driver Dashboard
+    slug: driver-metrics-flow
     url: https://www.sarvabazaar.com/api/health/flow-driver-metrics
     maxResponseTime: 5000
     headers:
       - "Authorization: Bearer $HEALTH_CHECK_SECRET"
 
-  - name: Customer Metrics Flow
+  - name: Customer Dashboard
+    slug: customer-metrics-flow
     url: https://www.sarvabazaar.com/api/health/flow-customer-metrics
     maxResponseTime: 5000
     headers:
       - "Authorization: Bearer $HEALTH_CHECK_SECRET"
 
-  - name: Guest Order Lookup Flow
+  - name: Guest Order Lookup
+    slug: guest-order-lookup-flow
     url: https://www.sarvabazaar.com/api/health/flow-guest-order-lookup
     maxResponseTime: 8000
     headers:
@@ -182,29 +210,865 @@ sites:
   #     status page is reachable, not a parsed operational/degraded state).
   # This answers "is it them or us" when one of our own checks above fails.
 
-  - name: Upstream - Vercel Status
+  - name: Vercel
+    slug: upstream-vercel-status
     url: https://www.vercel-status.com/api/v2/status.json
     __dangerous__body_down_if_text_missing: '"indicator":"none"'
 
-  - name: Upstream - OpenAI Status
+  - name: OpenAI
+    slug: upstream-open-ai-status
     url: https://status.openai.com/api/v2/status.json
     __dangerous__body_down_if_text_missing: '"indicator":"none"'
 
-  - name: Upstream - GitHub Status
+  - name: GitHub
+    slug: upstream-git-hub-status
     url: https://www.githubstatus.com/api/v2/status.json
     __dangerous__body_down_if_text_missing: '"indicator":"none"'
 
-  - name: Upstream - EmailJS Status
+  - name: EmailJS
+    slug: upstream-email-js-status
     url: https://status.emailjs.com/index.json
     __dangerous__body_down_if_text_missing: '"aggregate_state":"operational"'
 
-  - name: Upstream - Stripe Status (page only)
+  - name: Stripe
+    slug: upstream-stripe-status-page-only
     url: https://status.stripe.com/
 
-  - name: Upstream - Algolia Status (page only)
+  - name: Algolia
+    slug: upstream-algolia-status-page-only
     url: https://status.algolia.com/
+
+# Response-time chart on each per-monitor page. Upptime defaults to a mint
+# green; these match the status green used elsewhere.
+graphBackgroundColor: "rgba(118, 173, 42, 0.15)"
+graphBorderColor: "#76ad2a"
 
 status-website:
   cname: status.sarvabazaar.com
-  name: Sarva Bazaar Status
-  introTitle: "**Sarva Bazaar Status**"
+
+  # Rendered next to the wordmark in the masthead, so it reads "SARVA Status".
+  # Also used as the browser tab title.
+  name: Sarva Status
+  logoUrl: /favicon.png
+  favicon: /favicon.png
+
+  # No introTitle: the masthead already names the page, so a second heading
+  # would just repeat it.
+
+  # Single base theme so the cascade is predictable.
+  theme: light
+
+  css: |
+    /* Sarva Bazaar status page.
+       Layout, markup and behavior are Upptime's. This sets color, type and
+       spacing only. The whole-card click target (article.link a::after) and the
+       response-time graphs are left alone.
+       Palette values are sampled from status.claude.com. */
+
+    :root {
+      --sb-bg: #faf9f5;
+      --sb-surface: #ffffff;
+      --sb-text: #141413;
+      --sb-muted: #6b6a63;
+      --sb-line: #dedcd1;
+
+      --sb-green: #76ad2a;
+      --sb-amber: #d18b1f;
+      --sb-red: #c9432f;
+      /* Response-time graphs, tinted by the service's current status. */
+      --sb-graph-up: #b3d78d;
+      --sb-graph-degraded: #f2d49b;
+      --sb-graph-down: #efb0a4;
+
+      --body-background-color: var(--sb-bg);
+      --body-text-color: var(--sb-text);
+      --card-background-color: var(--sb-surface);
+      --card-border-color: var(--sb-line);
+      --nav-background-color: var(--sb-bg);
+      --nav-border-bottom-color: var(--sb-line);
+      --nav-current-border-bottom-color: var(--sb-text);
+      --code-color: var(--sb-text);
+      --code-background-color: var(--sb-bg);
+
+      --up-border-left-color: var(--sb-green);
+      --degraded-border-left-color: var(--sb-amber);
+      --down-border-left-color: var(--sb-red);
+      --down-background-color: var(--sb-surface);
+
+      --tag-color: #ffffff;
+      --tag-up-background-color: var(--sb-green);
+      --tag-degraded-background-color: var(--sb-amber);
+      --tag-down-background-color: var(--sb-red);
+      /* brief flash behind a value when the selected range changes */
+      --change-background-color: #dcecc4;
+
+      --error-button-border-color: var(--sb-text);
+      --error-button-background-color: var(--sb-text);
+      --error-button-color: #ffffff;
+      --submit-button-border-color: var(--sb-text);
+      --submit-button-background-color: var(--sb-text);
+      --submit-button-color: #ffffff;
+
+      --graph-opacity: 1;
+      --graph-filter: none;
+    }
+
+    html body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica,
+        Arial, sans-serif;
+      background: var(--sb-bg);
+      color: var(--sb-text);
+      line-height: 1.5;
+    }
+
+    body .container {
+      max-width: 860px;
+    }
+
+    body h1,
+    body h2,
+    body h3,
+    body h4 {
+      color: var(--sb-text);
+      font-weight: 600;
+    }
+
+    body a,
+    body h1 a,
+    body h2 a,
+    body h3 a,
+    body h4 a {
+      color: var(--sb-text);
+    }
+
+    /* ---------- Masthead: wordmark followed by the site name ---------- */
+
+    body nav {
+      background: var(--sb-bg);
+      border-bottom: 0;
+      padding: 0;
+      margin-bottom: 1.5rem;
+    }
+
+    body nav .container {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding-top: 28px;
+      padding-bottom: 0px !important;
+    }
+
+    body a.error-button {
+      margin-top: 1rem;
+    }
+
+    body nav .logo {
+      float: none;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 0;
+      margin: 0;
+      text-decoration: none;
+    }
+
+    body nav {
+      margin-bottom: 0 !important;
+      padding-bottom: 0 !important;
+    }
+
+    /* The wordmark is set to the cap height of the name beside it so the two
+       read as a single line of text rather than an image plus a label.
+       Nav.svelte ships `.logo.svelte-<hash> img.svelte-<hash> { height: 3rem }`,
+       which is more specific than anything that can be written here (the hash
+       changes on template updates and cannot be referenced), so these need
+       !important to apply. Change `height` to resize the wordmark. */
+    body nav .logo img {
+      height: 56px !important;
+      width: auto !important;
+      margin: 0 !important;
+      border-radius: 0 !important;
+    }
+
+    body nav .logo div {
+      font-size: 2.5rem;
+      font-weight: 600;
+      letter-spacing: -0.01em;
+      color: var(--sb-text);
+      line-height: 1 !important;
+    }
+
+    body nav ul {
+      margin: 0;
+      padding: 0;
+    }
+
+    /* On service-history pages, the existing logo link already points home.
+       Present it like the incident page's simple footer link instead of
+       repeating the masthead used on the status homepage. */
+    body:not(:has(main > section.live-status)) nav .logo img,
+    body:not(:has(main > section.live-status)) nav .logo div {
+      display: none;
+    }
+
+    body:not(:has(main > section.live-status)) nav .logo {
+      padding: 0;
+      margin: 0;
+      margin-bottom: 1.5rem;
+      border: 0;
+      border-radius: 0;
+      font-size: 0.85rem !important;
+      font-weight: 400 !important;
+      line-height: 1 !important;
+      color: var(--sb-muted) !important;
+      text-decoration: underline !important;
+      text-underline-offset: 3px !important;
+    }
+
+    body:not(:has(main > section.live-status)) nav .logo:hover {
+      color: var(--sb-text);
+    }
+
+    body:not(:has(main > section.live-status)) nav .logo::after {
+      content: "← Back to status";
+    }
+
+    /* Incident pages already provide their own “Back to all incidents” link
+       at the end of the page, and the error page provides “Return home”.
+       Neither needs a second navigation link. */
+    body:has(main > h2 + section + footer) nav,
+    body:has(main > a.error-button) nav {
+      display: none;
+    }
+
+    /* The hidden nav normally supplies this top breathing room. Keep it on
+       pages that use their own return link so their content is not flush with
+       the viewport. */
+    body:has(main > h2 + section + footer) main.container,
+    body:has(main > a.error-button) main.container {
+      padding-top: 53px;
+    }
+
+    /* ---------- Overall status banner ---------- */
+    /* Upptime hardcodes a leading emoji in this element, so the element's own
+       text is collapsed to zero and the label is restated here.
+       i18n.allSystemsOperational stays set as the no-CSS fallback. */
+
+    main.container > article.up,
+    main.container > article.degraded,
+    main.container > article.down {
+      font-size: 0;
+      border: 0;
+      border-radius: 4px;
+      padding: 14px 20px;
+      margin-top: 1.5rem !important;
+    }
+
+    main.container > header {
+      margin-bottom: 0 !important;
+    }
+
+    main.container > article.up::before,
+    main.container > article.degraded::before,
+    main.container > article.down::before {
+      font-size: 1.05rem;
+      font-weight: 500;
+      color: #ffffff;
+    }
+
+    main.container > article.up {
+      background: var(--sb-green);
+    }
+    main.container > article.up::before {
+      content: "All Systems Operational";
+    }
+
+    main.container > article.degraded {
+      background: var(--sb-amber);
+    }
+    main.container > article.degraded::before {
+      content: "Degraded Performance";
+    }
+
+    main.container > article.down,
+    main.container > article.down-active {
+      background: var(--sb-red);
+    }
+    main.container > article.down::before {
+      content: "Service Disruption";
+    }
+
+    /* ---------- Component list ---------- */
+    /* Upptime's own card layout is kept: separate cards, each with the status
+       colour on its left edge and its response-time graph on the right. */
+
+    section.live-status article h4 {
+      font-size: 1rem;
+      font-weight: 500;
+      margin-bottom: 0.25rem;
+    }
+
+    section.live-status article > div {
+      color: var(--sb-muted);
+      font-size: 0.82rem;
+    }
+
+    /* No `background` here: Upptime flashes these values on a range switch via
+       `.changed + section .data { background: var(--change-background-color) }`,
+       fading it out with its own 0.3s transition. Setting a background would
+       disable that animation. */
+    section.live-status article .data {
+      color: var(--sb-text);
+      font-weight: 500;
+    }
+
+    /* Response-time graph, recoloured.
+       The source PNGs are mint on a transparent background, so they are used as
+       a mask and painted in the page's green instead. Geometry is copied from
+       Upptime's own rule (contain / no-repeat / center right) so the graph is
+       drawn exactly where and how it was before.
+       `article` is already position:relative, so adding z-index:0 makes it a
+       stacking context; the mask then sits above the card background but below
+       the text, and the full-card click overlay (article.link a::after) keeps
+       the article as its containing block and still covers the whole card. */
+    section.live-status article.graph {
+      z-index: 0;
+      background-image: none !important;
+    }
+
+    section.live-status article.graph::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      z-index: -1;
+      pointer-events: none;
+      /* keeps the graph inside the card's rounded corners */
+      border-radius: inherit;
+      background: var(--sb-graph-up);
+      -webkit-mask-image: var(--background);
+      mask-image: var(--background);
+      -webkit-mask-size: contain;
+      mask-size: contain;
+      -webkit-mask-repeat: no-repeat;
+      mask-repeat: no-repeat;
+      -webkit-mask-position: center right;
+      mask-position: center right;
+    }
+
+    section.live-status article.degraded.graph::after {
+      background: var(--sb-graph-degraded);
+    }
+
+    section.live-status article.down.graph::after {
+      background: var(--sb-graph-down);
+    }
+
+    /* ---------- Per-monitor descriptions ---------- */
+    /* Upptime has no description field, so the text is keyed to each row's
+       history link below. Rows without a match render without the line. */
+
+    section.live-status article h4::after {
+      display: block;
+      margin-top: 3px;
+      font-size: 0.82rem;
+      font-weight: 400;
+      line-height: 1.45;
+      color: var(--sb-muted);
+    }
+
+    section.live-status article:has(a[href$="/history/website"]) h4::after {
+      content: "Main storefront and public pages at sarvabazaar.com.";
+    }
+
+    section.live-status article:has(a[href$="/history/guest-shop"]) h4::after {
+      content: "Browsing products and building a basket without an account.";
+    }
+
+    section.live-status article:has(a[href$="/history/vendor-listing"]) h4::after {
+      content: "Listing of local shops available to order from.";
+    }
+
+    section.live-status article:has(a[href$="/history/order-status-lookup"]) h4::after {
+      content: "Order status lookup for customers who are not signed in.";
+    }
+
+    section.live-status article:has(a[href$="/history/customer-sign-in"]) h4::after {
+      content: "Sign-in page for customer accounts.";
+    }
+
+    section.live-status article:has(a[href$="/history/vendor-sign-in"]) h4::after {
+      content: "Sign-in page for the shop owner portal.";
+    }
+
+    section.live-status article:has(a[href$="/history/driver-sign-in"]) h4::after {
+      content: "Sign-in page for delivery drivers.";
+    }
+
+    section.live-status article:has(a[href$="/history/customer-signup"]) h4::after {
+      content: "New customer account creation.";
+    }
+
+    section.live-status article:has(a[href$="/history/vendor-signup"]) h4::after {
+      content: "New shop registration and onboarding.";
+    }
+
+    section.live-status article:has(a[href$="/history/driver-signup"]) h4::after {
+      content: "Driver application and onboarding.";
+    }
+
+    section.live-status article:has(a[href$="/history/public-catalog-api"]) h4::after {
+      content: "Product and pricing data behind the shop pages.";
+    }
+
+    section.live-status article:has(a[href$="/history/payments-stripe"]) h4::after {
+      content: "Card payment processing at checkout, provided by Stripe.";
+    }
+
+    section.live-status article:has(a[href$="/history/firestore"]) h4::after {
+      content: "Storage for orders, baskets and shop inventory.";
+    }
+
+    section.live-status article:has(a[href$="/history/firebase-auth"]) h4::after {
+      content: "Verification of sign-in credentials and active sessions.";
+    }
+
+    section.live-status article:has(a[href$="/history/firebase-app-check"]) h4::after {
+      content: "Automated abuse filtering on public endpoints.";
+    }
+
+    section.live-status article:has(a[href$="/history/firebase-storage"]) h4::after {
+      content: "Product images and uploaded documents.";
+    }
+
+    section.live-status article:has(a[href$="/history/search-algolia"]) h4::after {
+      content: "Search and autocomplete across the catalog, provided by Algolia.";
+    }
+
+    section.live-status article:has(a[href$="/history/ai-open-ai"]) h4::after {
+      content: "Voice ordering and the AI shopping assistant, provided by OpenAI.";
+    }
+
+    section.live-status article:has(a[href$="/history/maps"]) h4::after {
+      content: "Address lookup and delivery route planning.";
+    }
+
+    section.live-status article:has(a[href$="/history/support-git-hub-api"]) h4::after {
+      content: "Publication of incident reports shown on this page.";
+    }
+
+    section.live-status article:has(a[href$="/history/email-alerts-config"]) h4::after {
+      content: "Order confirmations and alert emails.";
+    }
+
+    section.live-status article:has(a[href$="/history/checkout-flow"]) h4::after {
+      content: "Full purchase path from basket through to payment.";
+    }
+
+    section.live-status article:has(a[href$="/history/search-flow"]) h4::after {
+      content: "A live search query returning catalog results.";
+    }
+
+    section.live-status article:has(a[href$="/history/order-flow"]) h4::after {
+      content: "Order creation and write to the database.";
+    }
+
+    section.live-status article:has(a[href$="/history/vendor-metrics-flow"]) h4::after {
+      content: "Sales and inventory figures shown to shop owners.";
+    }
+
+    section.live-status article:has(a[href$="/history/driver-metrics-flow"]) h4::after {
+      content: "Earnings and delivery figures shown to drivers.";
+    }
+
+    section.live-status article:has(a[href$="/history/customer-metrics-flow"]) h4::after {
+      content: "Order history and account details for customers.";
+    }
+
+    section.live-status article:has(a[href$="/history/guest-order-lookup-flow"]) h4::after {
+      content: "Order retrieval from an order number and email address.";
+    }
+
+    section.live-status article:has(a[href$="/history/upstream-vercel-status"]) h4::after {
+      content: "Hosting provider for sarvabazaar.com. Status reported by Vercel.";
+    }
+
+    section.live-status article:has(a[href$="/history/upstream-open-ai-status"]) h4::after {
+      content: "Provider for voice and AI features. Status reported by OpenAI.";
+    }
+
+    section.live-status article:has(a[href$="/history/upstream-git-hub-status"]) h4::after {
+      content: "Provider for monitoring automation and this page. Status reported by GitHub.";
+    }
+
+    section.live-status article:has(a[href$="/history/upstream-email-js-status"]) h4::after {
+      content: "Provider for notification email delivery. Status reported by EmailJS.";
+    }
+
+    section.live-status article:has(a[href$="/history/upstream-stripe-status-page-only"]) h4::after {
+      content: "Payment processing provider. Reachability of the Stripe status page.";
+    }
+
+    section.live-status article:has(a[href$="/history/upstream-algolia-status-page-only"]) h4::after {
+      content: "Search provider. Reachability of the Algolia status page.";
+    }
+
+    /* ---------- Live Status heading and range switcher ---------- */
+
+    /* Upptime adds and removes `.changed` on this row to trigger the value-flash
+       animation, so styling must not depend on that class or the heading resizes
+       every time a range is selected. The row is identified by shape instead. */
+    body .f:has(> h2) {
+      align-items: baseline;
+      margin-bottom: 10px;
+    }
+
+    body .f h2 {
+      font-size: 1.75rem;
+      font-weight: 600;
+      margin: 0;
+    }
+
+    body .r label {
+      color: var(--sb-muted);
+      font-size: 1rem;
+    }
+
+    body .r input:checked + label {
+      color: var(--sb-text);
+    }
+
+    /* ---------- Incident history ---------- */
+
+    main.container section > h2 {
+      font-size: 1.75rem;
+      margin-top: 3rem;
+    }
+
+    /* Date heading, with a rule beneath it. */
+    main.container section > h3 {
+      font-size: 1.25rem;
+      font-weight: 500;
+      color: var(--sb-text);
+      opacity: 1;
+      border-bottom: 1px solid var(--sb-line);
+      padding-bottom: 10px;
+      margin: 2rem 0 1rem;
+    }
+
+    main header {
+      margin-bottom: 1.8rem !important;
+    }
+
+    main.container section > article.link h4 {
+      font-size: 1rem;
+      font-weight: 500;
+      margin-bottom: 0.2rem;
+    }
+
+    main.container section > article.link .f > div > div {
+      color: var(--sb-muted);
+      font-size: 0.85rem;
+    }
+
+    main.container section > article.link .f.r a {
+      color: var(--sb-muted);
+      font-size: 0.85rem;
+    }
+
+    /* ---------- Tags ---------- */
+
+    body .tag {
+      border-radius: 3px;
+      font-weight: 500;
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    /* ---------- Buttons ---------- */
+
+    body .submit-button,
+    body a.error-button {
+      border-radius: 4px !important;
+    }
+
+    /* ---------- Per-monitor and incident pages ---------- */
+
+    body dl dt {
+      color: var(--sb-muted);
+      font-size: 0.82rem;
+      font-weight: 500;
+    }
+
+    body dl dd {
+      color: var(--sb-text);
+    }
+
+    /* ---------- Footer ---------- */
+
+    body footer {
+      color: var(--sb-muted);
+      font-size: 0.85rem;
+    }
+
+    body footer a {
+      color: var(--sb-muted);
+    }
+
+    /* ---------- Shared page furniture ---------- */
+    /* The status homepage takes its title from the masthead, but the error,
+       rate-limit, per-monitor and incident pages each render their own heading.
+       These give all of them the same scale as the section headings above. */
+
+    main.container > h1,
+    main.container section > h1,
+    main.container > h2:first-child {
+      font-size: 1.75rem;
+      line-height: 1.25;
+    }
+
+    /* Subheadings inside the error and rate-limit copy sit below the page title. */
+    main.container > h2 {
+      font-size: 1.15rem;
+      font-weight: 600;
+    }
+
+    main.container > p,
+    main.container p.lead {
+      font-size: 1rem;
+      line-height: 1.6;
+      max-width: 68ch;
+    }
+
+    /* Token field on the rate-limit page, matched to the buttons. */
+    main.container form label span {
+      display: block;
+      font-size: 0.82rem;
+      font-weight: 500;
+      color: var(--sb-muted);
+    }
+
+    main.container form input[type="text"] {
+      font: inherit;
+      font-size: 0.95rem;
+      padding: 9px 12px;
+      min-width: 0;
+      width: 100%;
+      max-width: 420px;
+      color: var(--sb-text);
+      background: var(--sb-surface);
+      border: 1px solid var(--sb-line);
+      border-radius: 4px;
+      box-sizing: border-box;
+    }
+
+    main.container form input[type="text"]:focus {
+      outline: 2px solid var(--sb-text);
+      outline-offset: 1px;
+      border-color: transparent;
+    }
+
+    /* `a.error-button` is an <a>, so it is an inline box by default, and vertical
+       margins are ignored on inline boxes. A `margin-top` on it is therefore a
+       valid declaration that does nothing, which is why it shows as applied
+       rather than overridden. Giving it a block box makes margin-top take effect.
+       It stays in the text flow, so the desktop layout is otherwise unchanged;
+       the mobile rules further down switch it to `block` to centre it. */
+    body a.error-button {
+      display: inline-block;
+    }
+
+    /* "Back to all incidents" on the incident page, matched to the masthead's
+       back link so both read the same way. */
+    main.container > footer a {
+      font-size: 0.85rem;
+      color: var(--sb-muted);
+      text-decoration: underline;
+      text-underline-offset: 3px;
+    }
+
+    main.container > footer a:hover {
+      color: var(--sb-text);
+    }
+
+    /* ---------- Responsive ---------- */
+    /* Sizing and flow only. Vertical spacing is left to the rules above so the
+       rhythm set there still applies at every width. */
+
+    @media (max-width: 640px) {
+      /* global.css sets 2rem of side padding, which costs a sixth of a phone
+         screen. */
+      body .container {
+        padding-left: 16px;
+        padding-right: 16px;
+      }
+
+      /* Nav.svelte sets overflow-x:auto on the bar, so an oversized masthead
+         scrolls sideways out of view instead of visibly wrapping. Scale it to
+         fit rather than letting it clip. */
+      body nav .logo img {
+        height: 34px !important;
+      }
+
+      body nav .logo div {
+        font-size: 1.5rem;
+      }
+
+      main.container > article.up::before,
+      main.container > article.degraded::before,
+      main.container > article.down::before {
+        font-size: 0.95rem;
+      }
+
+      /* Heading and range switcher stop competing for one line. */
+      body .f:has(> h2) {
+        flex-direction: column;
+        align-items: center;
+        gap: 10px;
+      }
+
+      main.container > article.up {
+        text-align: center;
+      }
+
+      body nav .container {
+        justify-content: center !important;
+      }
+
+      body .f h2,
+      main.container section > h2,
+      main.container > h1,
+      main.container section > h1,
+      main.container > h2:first-child {
+        font-size: 1.35rem;
+        text-align: center;
+      }
+
+      main.container section > h3 {
+        font-size: 1.1rem;
+        text-align: center;
+      }
+
+      /* Same centring applied to the remaining pages, so the error, rate-limit,
+         per-monitor and incident views match the homepage at this width.
+         Cards and body copy stay left aligned; only page chrome is centred. */
+
+      /* Subheadings in the error and rate-limit copy. */
+      main.container > h2 {
+        text-align: center;
+      }
+
+      /* The masthead's back link on per-monitor and rate-limit pages. */
+      body:not(:has(main > section.live-status)) nav .logo {
+        text-align: center;
+      }
+
+      /* Short metadata sits under a centred title on both the per-monitor page
+         (uptime, average response) and the incident page (opened, closed). */
+      main.container section > dl,
+      main.container section > .f > dl {
+        text-align: center;
+      }
+
+      /* Incident page: the GitHub link and the meta block above it.
+         `align-items: stretch` matters here. Centring the flex items instead
+         would shrink the <dl> to its widest line, so a short label like
+         "Opened at" would centre inside that box while the timestamp below it
+         filled the box and read as left aligned. */
+      main.container section > .f,
+      main.container section > .f > .r {
+        align-items: stretch;
+        text-align: center;
+      }
+
+      /* "Back to all incidents" and the error page's home button. */
+      main.container > footer {
+        text-align: center;
+      }
+
+      main.container > a.error-button {
+        display: block;
+        width: fit-content;
+        margin-left: auto;
+        margin-right: auto;
+      }
+
+      /* The error page is short enough that centring its copy too reads better
+         than a centred heading over left-aligned text. Longer pages keep their
+         paragraphs left aligned for readability. */
+      body:has(main > a.error-button) main.container {
+        text-align: center;
+      }
+
+      /* Token form on the rate-limit page. */
+      main.container form {
+        text-align: center;
+      }
+
+      main.container form input[type="text"] {
+        margin-left: auto;
+        margin-right: auto;
+      }
+
+      /* The range switcher spreads across the row instead of relying on the
+         1rem left margin each label carries. */
+      body form.f.r {
+        width: 100%;
+        justify-content: space-evenly;
+        flex-wrap: nowrap;
+      }
+
+      body form.f.r label {
+        margin-left: 0 !important;
+        font-size: 0.9rem;
+      }
+
+      /* `contain` sizes the graph from the card's height. A narrow card is tall
+         enough that this puts the graph behind the text, so at this width it is
+         pinned to a corner strip instead. */
+      section.live-status article.graph::after {
+        -webkit-mask-size: auto 48%;
+        mask-size: auto 48%;
+        -webkit-mask-position: right bottom;
+        mask-position: right bottom;
+      }
+
+      section.live-status article h4 {
+        font-size: 0.95rem;
+      }
+
+      /* Incident rows and incident-page metadata stack rather than squeeze. */
+      main.container section > article.link .f,
+      main.container section > .f {
+        flex-direction: column;
+        gap: 6px;
+      }
+
+      /* Only the home page's incident cards keep their contents left aligned;
+         alignment for the incident page's own meta block is set above. Setting
+         align-items on both here would shrink that block's <dl> to its widest
+         line and undo the centring. */
+      main.container section > article.link .f {
+        align-items: flex-start;
+      }
+
+      main.container section > article.link .f.r {
+        justify-content: flex-start;
+        text-align: left;
+      }
+
+      main.container section > article p {
+        font-size: 0.95rem;
+      }
+    }
+
+    /* Very narrow phones: keep the masthead on one line. */
+    @media (max-width: 380px) {
+      body nav .logo img {
+        height: 28px !important;
+      }
+
+      body nav .logo div {
+        font-size: 1.25rem;
+      }
+    }
