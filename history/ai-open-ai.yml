@@ -1,7 +1,7 @@
 url: https://www.sarvabazaar.com/api/health/openai
-status: up
-code: 200
-responseTime: 730
-lastUpdated: 2026-08-02T23:59:27.660Z
+status: down
+code: 503
+responseTime: 304
+lastUpdated: 2026-08-03T03:00:24.546Z
 startTime: 2026-07-31T02:18:07.164Z
 generator: Upptime <https://github.com/upptime/upptime>
