@@ -1,7 +1,7 @@
 url: https://www.sarvabazaar.com/api/health/firebase-auth
-status: down
-code: 503
-responseTime: 286
-lastUpdated: 2026-08-03T02:59:40.388Z
+status: up
+code: 200
+responseTime: 367
+lastUpdated: 2026-08-03T04:24:41.342Z
 startTime: 2026-07-31T02:17:10.557Z
 generator: Upptime <https://github.com/upptime/upptime>
