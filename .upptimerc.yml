@@ -737,7 +737,7 @@ status-website:
        every time a range is selected. The row is identified by shape instead. */
     body .f:has(> h2) {
       align-items: baseline;
-      margin-bottom: 10px;
+      margin-bottom: 12px;
     }
 
     body .f h2 {
