@@ -150,10 +150,30 @@ sites:
     headers:
       - "Authorization: Bearer $HEALTH_CHECK_SECRET"
 
+  # Pure arithmetic with no external dependency, so the only thing that can
+  # make it slow is a cold start.
+  - name: Order Pricing
+    slug: pricing-flow
+    url: https://www.sarvabazaar.com/api/health/flow-quote
+    maxResponseTime: 5000
+    headers:
+      - "Authorization: Bearer $HEALTH_CHECK_SECRET"
+
   - name: Checkout
     slug: checkout-flow
     url: https://www.sarvabazaar.com/api/health/flow-checkout
     maxResponseTime: 8000
+    headers:
+      - "Authorization: Bearer $HEALTH_CHECK_SECRET"
+
+  # Deliberately looser than the other checks: this one walks a whole saved-card
+  # round trip (create customer, SetupIntent, confirm, list, re-authorize,
+  # cancel, detach, delete), so it is roughly eight sequential Stripe calls
+  # rather than the one or two everything else here makes.
+  - name: Saved Cards
+    slug: saved-cards-flow
+    url: https://www.sarvabazaar.com/api/health/flow-saved-cards
+    maxResponseTime: 15000
     headers:
       - "Authorization: Bearer $HEALTH_CHECK_SECRET"
 
@@ -168,6 +188,29 @@ sites:
     slug: order-flow
     url: https://www.sarvabazaar.com/api/health/flow-order
     maxResponseTime: 8000
+    headers:
+      - "Authorization: Bearer $HEALTH_CHECK_SECRET"
+
+  - name: Order Confirmation
+    slug: order-confirmation-flow
+    url: https://www.sarvabazaar.com/api/health/flow-order-confirmation
+    maxResponseTime: 5000
+    headers:
+      - "Authorization: Bearer $HEALTH_CHECK_SECRET"
+
+  # Firestore reads plus a Stripe webhookEndpoints.list, hence the wider bound
+  # than the pure-Firestore checks.
+  - name: Payment Updates
+    slug: webhooks-flow
+    url: https://www.sarvabazaar.com/api/health/flow-webhooks
+    maxResponseTime: 8000
+    headers:
+      - "Authorization: Bearer $HEALTH_CHECK_SECRET"
+
+  - name: Shop and Driver Payouts
+    slug: payouts-flow
+    url: https://www.sarvabazaar.com/api/health/flow-payouts
+    maxResponseTime: 5000
     headers:
       - "Authorization: Bearer $HEALTH_CHECK_SECRET"
 
@@ -678,8 +721,16 @@ status-website:
       content: "Order confirmations and alert emails.";
     }
 
+    section.live-status article:has(a[href$="/history/pricing-flow"]) h4::after {
+      content: "Totals, delivery fees and taxes calculated on an order.";
+    }
+
     section.live-status article:has(a[href$="/history/checkout-flow"]) h4::after {
       content: "Full purchase path from basket through to payment.";
+    }
+
+    section.live-status article:has(a[href$="/history/saved-cards-flow"]) h4::after {
+      content: "Saving a card to an account and paying with it again.";
     }
 
     section.live-status article:has(a[href$="/history/search-flow"]) h4::after {
@@ -688,6 +739,18 @@ status-website:
 
     section.live-status article:has(a[href$="/history/order-flow"]) h4::after {
       content: "Order creation and write to the database.";
+    }
+
+    section.live-status article:has(a[href$="/history/order-confirmation-flow"]) h4::after {
+      content: "The receipt page shown once an order is placed.";
+    }
+
+    section.live-status article:has(a[href$="/history/webhooks-flow"]) h4::after {
+      content: "Refunds, disputes and payment changes reaching an order.";
+    }
+
+    section.live-status article:has(a[href$="/history/payouts-flow"]) h4::after {
+      content: "Money owed reaching shop owners and drivers after delivery.";
     }
 
     section.live-status article:has(a[href$="/history/vendor-metrics-flow"]) h4::after {
