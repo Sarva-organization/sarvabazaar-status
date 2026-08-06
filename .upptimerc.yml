@@ -177,6 +177,19 @@ sites:
     headers:
       - "Authorization: Bearer $HEALTH_CHECK_SECRET"
 
+  # Unlike everything else here, this one fails on the *data* being wrong rather
+  # than on a dependency being unreachable: checkout takes stock at draft time,
+  # before payment, so stock that is never handed back is stranded silently.
+  # Four Firestore queries (negative units, paid-but-unconfirmed orders,
+  # drafts past the purge window, inventory whose derived totals stopped
+  # tracking units), so the same bound as the other Firestore-only checks.
+  - name: Stock Accuracy
+    slug: checkout-stock-flow
+    url: https://www.sarvabazaar.com/api/health/flow-checkout-stock
+    maxResponseTime: 5000
+    headers:
+      - "Authorization: Bearer $HEALTH_CHECK_SECRET"
+
   - name: Search Results
     slug: search-flow
     url: https://www.sarvabazaar.com/api/health/flow-search
@@ -184,7 +197,11 @@ sites:
     headers:
       - "Authorization: Bearer $HEALTH_CHECK_SECRET"
 
-  - name: Order Placement
+  # Commits the real multi-document read-then-write transaction shape every
+  # order transition uses (seed batch, transaction over three docs, verify,
+  # cleanup batch), not the one-read one-write case that can never fail — hence
+  # the wider bound than a single-query check.
+  - name: Order Processing
     slug: order-flow
     url: https://www.sarvabazaar.com/api/health/flow-order
     maxResponseTime: 8000
@@ -733,12 +750,16 @@ status-website:
       content: "Saving a card to an account and paying with it again.";
     }
 
+    section.live-status article:has(a[href$="/history/checkout-stock-flow"]) h4::after {
+      content: "Stock held while an order is paid for, and returned if it is not.";
+    }
+
     section.live-status article:has(a[href$="/history/search-flow"]) h4::after {
       content: "A live search query returning catalog results.";
     }
 
     section.live-status article:has(a[href$="/history/order-flow"]) h4::after {
-      content: "Order creation and write to the database.";
+      content: "Orders moving between stages as they are confirmed, picked up and delivered.";
     }
 
     section.live-status article:has(a[href$="/history/order-confirmation-flow"]) h4::after {
