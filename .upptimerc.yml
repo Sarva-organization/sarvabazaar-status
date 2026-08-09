@@ -197,6 +197,52 @@ sites:
     headers:
       - "Authorization: Bearer $HEALTH_CHECK_SECRET"
 
+  # Asserts the *shape* of the search index rather than that Algolia answered,
+  # because every failure mode behind the shop grid is silent: a missing sort
+  # replica returns primary order, a filterOnly facet returns no counts, and a
+  # filter on an undeclared attribute returns zero hits. None of them error, so
+  # a shopper just sees an oddly-ordered grid or an empty shelf.
+  # Nine sequential getSettings calls (primary plus the four sort replicas,
+  # checked twice — once for facets, once for stray custom ranking) plus the
+  # approved-vendor read and one real scoped query, hence the wider bound than
+  # a single-query check. Measured ~580ms server-side warm.
+  - name: Product Filters and Sorting
+    slug: shop-search-flow
+    url: https://www.sarvabazaar.com/api/health/shop-search
+    maxResponseTime: 8000
+    headers:
+      - "Authorization: Bearer $HEALTH_CHECK_SECRET"
+
+  # The one check here whose failure is invisible even in the data: the query
+  # side and the stored vectors must come from the same embedding model, and if
+  # they drift apart nothing errors — findNearest just returns confident
+  # nonsense. Embeds one product's own text and compares it against that
+  # product's stored vector, so agreement should be near-total.
+  # Reads the whole inventory collection (embedding coverage degrades quietly as
+  # un-enriched items pile up) and then makes an OpenAI embeddings call, so this
+  # gets the same loose bound as the saved-card round trip — it is the only
+  # check here whose cost grows with the catalog. Measured ~2.1s server-side.
+  - name: Search Relevance
+    slug: semantic-search-flow
+    url: https://www.sarvabazaar.com/api/health/semantic-search
+    maxResponseTime: 15000
+    headers:
+      - "Authorization: Bearer $HEALTH_CHECK_SECRET"
+
+  # The shared base under all four text engines and four voice modes: the API
+  # keys, the two indices their tool calls query, and the attributes those calls
+  # filter on. A missing key or a dropped facet surfaces as an assistant that
+  # says "I couldn't find anything" — indistinguishable from a genuinely empty
+  # result, and it never logs. Deliberately makes no model call, so this is
+  # three Algolia round trips rather than a billed completion per poll — the
+  # same bound as the other Algolia checks. Measured ~50ms server-side.
+  - name: Assistant Lookups
+    slug: assistants-flow
+    url: https://www.sarvabazaar.com/api/health/assistants
+    maxResponseTime: 5000
+    headers:
+      - "Authorization: Bearer $HEALTH_CHECK_SECRET"
+
   # Commits the real multi-document read-then-write transaction shape every
   # order transition uses (seed batch, transaction over three docs, verify,
   # cleanup batch), not the one-read one-write case that can never fail — hence
@@ -756,6 +802,18 @@ status-website:
 
     section.live-status article:has(a[href$="/history/search-flow"]) h4::after {
       content: "A live search query returning catalog results.";
+    }
+
+    section.live-status article:has(a[href$="/history/shop-search-flow"]) h4::after {
+      content: "Category and shop filters, and the order products are sorted in.";
+    }
+
+    section.live-status article:has(a[href$="/history/semantic-search-flow"]) h4::after {
+      content: "Matching everyday wording to the right products.";
+    }
+
+    section.live-status article:has(a[href$="/history/assistants-flow"]) h4::after {
+      content: "Product and order lookups the voice and chat assistants rely on.";
     }
 
     section.live-status article:has(a[href$="/history/order-flow"]) h4::after {
