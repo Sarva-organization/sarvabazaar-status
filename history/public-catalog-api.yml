@@ -1,7 +1,7 @@
 url: https://www.sarvabazaar.com/api/catalog
-status: up
-code: 200
-responseTime: 428
-lastUpdated: 2026-08-06T01:08:51.629Z
+status: down
+code: 404
+responseTime: 124
+lastUpdated: 2026-08-08T23:30:44.824Z
 startTime: 2026-07-31T02:16:41.071Z
 generator: Upptime <https://github.com/upptime/upptime>
