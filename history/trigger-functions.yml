@@ -1,7 +1,7 @@
 url: https://www.sarvabazaar.com/api/health/triggers
-status: down
-code: 404
-responseTime: 57
-lastUpdated: 2026-08-09T21:25:49.905Z
+status: up
+code: 200
+responseTime: 493
+lastUpdated: 2026-08-09T21:42:59.705Z
 startTime: 2026-08-09T21:25:37.675Z
 generator: Upptime <https://github.com/upptime/upptime>
