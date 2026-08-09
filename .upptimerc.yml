@@ -68,13 +68,6 @@ sites:
     slug: driver-signup
     url: https://www.sarvabazaar.com/driver/auth/signup
 
-  # Public route handler with real, uncached-on-miss Firestore reads
-  # (vendors + inventory collections) — no auth required. Backs /order and
-  # /order/vendors client-side.
-  - name: Product Catalog
-    slug: public-catalog-api
-    url: https://www.sarvabazaar.com/api/catalog
-
   # ---------------- Our own dependency health checks ----------------
   # All gated by HEALTH_CHECK_SECRET; maxResponseTime tightened from the 30s
   # default since these are simple API pings that should be fast — a slow
@@ -166,17 +159,6 @@ sites:
     headers:
       - "Authorization: Bearer $HEALTH_CHECK_SECRET"
 
-  # Deliberately looser than the other checks: this one walks a whole saved-card
-  # round trip (create customer, SetupIntent, confirm, list, re-authorize,
-  # cancel, detach, delete), so it is roughly eight sequential Stripe calls
-  # rather than the one or two everything else here makes.
-  - name: Saved Cards
-    slug: saved-cards-flow
-    url: https://www.sarvabazaar.com/api/health/flow-saved-cards
-    maxResponseTime: 15000
-    headers:
-      - "Authorization: Bearer $HEALTH_CHECK_SECRET"
-
   # Unlike everything else here, this one fails on the *data* being wrong rather
   # than on a dependency being unreachable: checkout takes stock at draft time,
   # before payment, so stock that is never handed back is stranded silently.
@@ -220,8 +202,8 @@ sites:
   # product's stored vector, so agreement should be near-total.
   # Reads the whole inventory collection (embedding coverage degrades quietly as
   # un-enriched items pile up) and then makes an OpenAI embeddings call, so this
-  # gets the same loose bound as the saved-card round trip — it is the only
-  # check here whose cost grows with the catalog. Measured ~2.1s server-side.
+  # gets a looser bound than the rest — it is the only check here whose cost
+  # grows with the catalog. Measured ~2.1s server-side.
   - name: Search Relevance
     slug: semantic-search-flow
     url: https://www.sarvabazaar.com/api/health/semantic-search
@@ -740,10 +722,6 @@ status-website:
       content: "Driver application and onboarding.";
     }
 
-    section.live-status article:has(a[href$="/history/public-catalog-api"]) h4::after {
-      content: "Product and pricing data behind the shop pages.";
-    }
-
     section.live-status article:has(a[href$="/history/payments-stripe"]) h4::after {
       content: "Card payment processing at checkout, provided by Stripe.";
     }
@@ -790,10 +768,6 @@ status-website:
 
     section.live-status article:has(a[href$="/history/checkout-flow"]) h4::after {
       content: "Full purchase path from basket through to payment.";
-    }
-
-    section.live-status article:has(a[href$="/history/saved-cards-flow"]) h4::after {
-      content: "Saving a card to an account and paying with it again.";
     }
 
     section.live-status article:has(a[href$="/history/checkout-stock-flow"]) h4::after {
