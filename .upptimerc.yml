@@ -289,9 +289,19 @@ sites:
   # The dead-man's switch above cannot work for a Firestore trigger: it fires on
   # data events, so "hasn't run in three hours" is normal when nobody edited
   # anything. What a detached or failing trigger leaves behind is wrong DATA, so
-  # these assert the invariant each trigger exists to maintain. Samples are
-  # bounded (50 items / 25 orders) and skip anything written in the last two
-  # minutes, since the triggers are asynchronous. Measured ~1.1s for all four.
+  # four of these five assert the invariant each trigger exists to maintain
+  # (derived inventory totals, shop coordinates on items, the public order
+  # mirror, search-index parity). Samples are bounded (50 items / 25 orders) and
+  # skip anything written in the last two minutes, since the triggers are
+  # asynchronous.
+  #
+  # The fifth, trigger-liveness, covers the blind spot in the other four: the
+  # derived-field check compares stored values against a recomputation, so a
+  # detached trigger stays invisible for as long as every writer happens to
+  # compute correctly on its own. It instead compares each trigger's own
+  # heartbeat against the newest write to the collection it watches — a
+  # collection written well after its trigger last fired means broken wiring.
+  # Measured ~1.2s for all five.
   - name: Data Consistency
     slug: trigger-functions
     url: https://www.sarvabazaar.com/api/health/triggers
