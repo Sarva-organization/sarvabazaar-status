@@ -401,6 +401,42 @@ sites:
     headers:
       - "Authorization: Bearer $HEALTH_CHECK_SECRET"
 
+  # A shopper's account page — the spending summary, the account age, and the
+  # per-address order counts that BOTH customer assistants now quote back when
+  # asked "how many orders went to my work address".
+  #
+  # Almost everything behind this page fails QUIETLY, which is what the check is
+  # built around:
+  #   - the per-address counter swallows a failed count deliberately, so the
+  #     page loses a usage line instead of failing to render. The cost is that
+  #     the count failing for EVERY address at once returns a perfectly
+  #     well-formed empty result, indistinguishable from "this shopper has never
+  #     ordered". The check re-runs that same counter in strict mode, so the
+  #     failure has somewhere to surface;
+  #   - those counts match an order's recorded delivery address against the
+  #     saved one, so if checkout ever stops recording it, every address reads
+  #     "no orders yet" forever and nothing errors anywhere. A sample of recent
+  #     orders is checked for that field — sampled rather than one order,
+  #     because a pickup order legitimately carries no delivery address;
+  #   - every derived figure is legitimately zero for the sentinel account the
+  #     check runs against, so the arithmetic — the spend breakdown, the
+  #     averages, each store's share of spend — is re-run over a fixture with
+  #     real numbers in it. Otherwise that half of the check could not fail.
+  # It also confirms a profile for nobody comes back empty, which is the one
+  # failure here that shows too MUCH rather than too little.
+  #
+  # The lifetime totals underneath are NOT re-verified here — Customer Dashboard
+  # above already checks those field by field, off the same cached loader.
+  #
+  # Around seven Firestore round trips, so it shares the 5s bound of the other
+  # Firestore-backed flows. Measured ~290-440ms server-side warm, 680ms cold.
+  - name: Customer Profile
+    slug: customer-profile-flow
+    url: https://www.sarvabazaar.com/api/health/flow-customer-profile
+    maxResponseTime: 5000
+    headers:
+      - "Authorization: Bearer $HEALTH_CHECK_SECRET"
+
   - name: Guest Order Lookup
     slug: guest-order-lookup-flow
     url: https://www.sarvabazaar.com/api/health/flow-guest-order-lookup
