@@ -371,6 +371,36 @@ sites:
     headers:
       - "Authorization: Bearer $HEALTH_CHECK_SECRET"
 
+  # A shopper's order history — the My Orders page's Past tab and the same
+  # search both customer assistants run. All three are one Algolia query, and
+  # every way it breaks is silent or actively misleading, so this asserts the
+  # index's SHAPE rather than that Algolia answered:
+  #   - a sort replica that doesn't exist is a hard 404 that fails the WHOLE
+  #     search, so the shopper is told they have no orders;
+  #   - a replica that exists but was never given a ranking formula returns the
+  #     primary's order, so ascending and descending come back identical;
+  #   - a numeric filter on an attribute that isn't declared for filtering
+  #     EXCLUDES every record, so "orders over $50" reads as "you have never
+  #     spent over $50".
+  # It also runs the real query under a sentinel customer id (a non-empty result
+  # would mean the per-customer scope has stopped holding, the one failure here
+  # that shows too MUCH rather than too little), the live tab's Firestore query
+  # (which needs its own composite index), and the export's metrics producer.
+  #
+  # No completion is ever billed — the one model call is a metadata retrieve
+  # confirming the search box's parser model still exists, because a retired one
+  # degrades to plain text matching without erring.
+  #
+  # Five sequential Algolia getSettings plus a search, two Firestore reads and
+  # that model lookup, hence the wider bound than a single-query check.
+  # Measured ~570-890ms server-side warm.
+  - name: Order History and Search
+    slug: customer-orders-flow
+    url: https://www.sarvabazaar.com/api/health/flow-customer-orders
+    maxResponseTime: 10000
+    headers:
+      - "Authorization: Bearer $HEALTH_CHECK_SECRET"
+
   - name: Guest Order Lookup
     slug: guest-order-lookup-flow
     url: https://www.sarvabazaar.com/api/health/flow-guest-order-lookup
