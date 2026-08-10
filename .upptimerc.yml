@@ -350,6 +350,20 @@ sites:
     headers:
       - "Authorization: Bearer $HEALTH_CHECK_SECRET"
 
+  # Broader than the name suggests, and deliberately so. This used to call a
+  # pure function with an empty array and assert the totals came back zero —
+  # green forever, whatever happened to the real thing. It now exercises the
+  # actual path: the customer_stats cache read, the fingerprint query and the
+  # recent-orders read, then asserts the payload's SHAPE field by field.
+  #
+  # That payload is what BOTH customer assistants answer spending questions
+  # from (injected as context for the text engine, returned by get_metrics for
+  # voice) as well as what the dashboard renders, so a red here means all three
+  # are wrong — not just the page. It also pushes a real order through the
+  # separate module the PDF/Excel downloads are built from.
+  #
+  # Real Firestore reads now, so it shares the 5s bound of the other
+  # Firestore-backed flows rather than the sub-second one a pure function had.
   - name: Customer Dashboard
     slug: customer-metrics-flow
     url: https://www.sarvabazaar.com/api/health/flow-customer-metrics
