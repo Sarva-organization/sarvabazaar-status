@@ -343,9 +343,56 @@ sites:
     headers:
       - "Authorization: Bearer $HEALTH_CHECK_SECRET"
 
+  # Same rewrite the Customer Dashboard check below got, for the same reason.
+  # This used to call computeDriverMetrics({}, []) and assert the totals came
+  # back zero — a function returning zeros for an empty array cannot fail, so it
+  # was green by construction. It now exercises the actual path: the
+  # driver_stats cache read, the transactions fingerprint, and the two live
+  # order queries the page runs beside it.
+  #
+  # Three things the sentinel account alone cannot prove are re-run over a
+  # fixture with real numbers in it, because every figure is legitimately zero
+  # for a driver who owns nothing:
+  #   - the aggregation. Its worst failure is an accepted-but-undelivered job
+  #     counting as earnings, which would report money the driver was never
+  #     paid;
+  #   - the "Available now" query. It is UNSCOPED, so a missing index reads as
+  #     an empty card — indistinguishable from no shop having anything packed;
+  #   - the chart's bucket counts. The page assumes 7 / 30 / 12, and a short
+  #     series silently changes what "the last 7 days" means.
+  #
+  # The payload it asserts field-by-field is also what both driver assistants
+  # answer earnings questions from, so a red here means all three are wrong —
+  # not just the page. A handful of Firestore round trips, so it keeps the 5s
+  # bound of the other Firestore-backed flows.
   - name: Driver Dashboard
     slug: driver-metrics-flow
     url: https://www.sarvabazaar.com/api/health/flow-driver-metrics
+    maxResponseTime: 5000
+    headers:
+      - "Authorization: Bearer $HEALTH_CHECK_SECRET"
+
+  # The driver's exported report — the PDF and workbook behind "Export Driver
+  # Report", which drivers use to reconcile income at tax time.
+  #
+  # Every failure here is silent. Both generators are deliberately defensive, so
+  # a renamed or dropped field does not throw: the document still builds and
+  # still downloads, with "N/A" and "$0.00" where the numbers should be. So this
+  # asserts the payload's SHAPE — around thirty fields the two documents read by
+  # name — and its arithmetic, rather than that a call succeeded.
+  #
+  # Two of those sums are worth naming. A delivered order with no
+  # driverTransaction behind it is a real case, and if the merge stops folding
+  # those in the report simply under-reports what the driver earned. And
+  # pickup/delivery efficiency is STORED as a 0..1 ratio but REPORTED as a
+  # percentage — get that wrong and every driver is graded against thresholds of
+  # 70/80/90 they cannot reach, which is a bug this codebase has already had.
+  #
+  # Two indexed Firestore reads against a sentinel that owns nothing (a missing
+  # index there 500s the whole export), then pure arithmetic.
+  - name: Driver Report
+    slug: driver-report-flow
+    url: https://www.sarvabazaar.com/api/health/flow-driver-report
     maxResponseTime: 5000
     headers:
       - "Authorization: Bearer $HEALTH_CHECK_SECRET"
