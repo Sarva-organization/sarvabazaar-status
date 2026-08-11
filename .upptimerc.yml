@@ -336,6 +336,70 @@ sites:
     headers:
       - "Authorization: Bearer $HEALTH_CHECK_SECRET"
 
+  # The payouts PAGE, where the row above watches the money itself. One
+  # component serves /vendor/payouts and /driver/payouts, and both driver
+  # assistants answer "when do I get paid" from the same numbers — so a red here
+  # is the page and all four engines wrong together.
+  #
+  # Everything it asserts fails silently in production. The page draws "$0.00
+  # paid out" over an empty table just as readily for a broken earnings split as
+  # for a shop that has not sold anything, and nothing logs either way:
+  #   - the split itself. The vendor is owed the item subtotal and the driver the
+  #     delivery fee plus tip; paying either one `total` hands them the other's
+  #     money plus the customer's tax. Graded against a fixture whose fields are
+  #     all different, so confusing two of them cannot still add up;
+  #   - the order of the state test. A failed transfer is STILL a captured
+  #     charge, so checking capture first reports money nobody received as "Paid
+  #     out" — the worst sentence this page could print;
+  #   - created_at_ts being epoch seconds. This shipped wrong and dated every row
+  #     on both payout pages to January 1970. Sampled from live orders, since the
+  #     risk is a writer switching to milliseconds, not the reader;
+  #   - the (vendorID|driverID, created_at_ts) indexes, which 500 the whole page
+  #     when absent — and only in the environment that is missing one.
+  # It grades the functions the route actually calls rather than a copy, so it
+  # cannot drift green the way a re-implementation would. Two sentinel queries
+  # and one five-document read, so the same bound as the other Firestore checks.
+  # Measured ~270ms server-side warm.
+  - name: Payouts Page
+    slug: payouts-page-flow
+    url: https://www.sarvabazaar.com/api/health/flow-payouts-page
+    maxResponseTime: 5000
+    headers:
+      - "Authorization: Bearer $HEALTH_CHECK_SECRET"
+
+  # The two payout APIs' auth gate, checked from outside with NO credentials.
+  # Everything else here runs server-side against the handler's logic; these are
+  # the only rows that exercise the secureRoute wrapper itself, over real HTTP,
+  # the way an attacker would reach it.
+  #
+  # 401 is the pass condition, so both failure directions are caught by one
+  # assertion: a 200 means the gate opened and one signed-out request can read
+  # somebody's bank-transfer history, and a 5xx means the payouts page is broken
+  # for everyone who IS signed in. Only an exact 401 is both closed and working.
+  #
+  # withAuth returns 401 for a missing token, an invalid token AND a missing App
+  # Check header, so this stays a single expected code in production where App
+  # Check is enforced. 403 is reserved for requireRoles, which neither route uses
+  # — if one ever starts, that shows up here as a failure rather than silently.
+  - name: Payout History Auth Gate
+    slug: payouts-orders-auth
+    url: https://www.sarvabazaar.com/api/payouts/orders
+    expectedStatusCodes:
+      - 401
+    maxResponseTime: 5000
+
+  # POST because that is the only method the route exports; a GET would answer
+  # 405 from the framework without ever reaching the auth wrapper, which would
+  # pass while proving nothing. Safe to call unauthenticated — it 401s before it
+  # can mint a Stripe AccountSession.
+  - name: Payout Session Auth Gate
+    slug: payouts-session-auth
+    url: https://www.sarvabazaar.com/api/payouts/session
+    method: POST
+    expectedStatusCodes:
+      - 401
+    maxResponseTime: 5000
+
   - name: Shop Owner Dashboard
     slug: vendor-metrics-flow
     url: https://www.sarvabazaar.com/api/health/flow-vendor-metrics
