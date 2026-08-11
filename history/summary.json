@@ -695,18 +695,18 @@
     "icon": "https://icons.duckduckgo.com/ip3/www.sarvabazaar.com.ico",
     "slug": "payouts-page-flow",
     "status": "down",
-    "uptime": "13.38%",
-    "uptimeDay": "13.38%",
-    "uptimeWeek": "13.38%",
-    "uptimeMonth": "13.38%",
-    "uptimeYear": "13.38%",
+    "uptime": "9.59%",
+    "uptimeDay": "9.59%",
+    "uptimeWeek": "9.59%",
+    "uptimeMonth": "9.59%",
+    "uptimeYear": "9.59%",
     "time": 322,
     "timeDay": 322,
     "timeWeek": 322,
     "timeMonth": 322,
     "timeYear": 322,
     "dailyMinutesDown": {
-      "2026-08-11": 1
+      "2026-08-11": 2
     }
   },
   {
@@ -869,7 +869,7 @@
     "slug": "customer-profile-flow",
     "status": "up",
     "uptime": "98.29%",
-    "uptimeDay": "98.94%",
+    "uptimeDay": "98.98%",
     "uptimeWeek": "98.29%",
     "uptimeMonth": "98.29%",
     "uptimeYear": "98.29%",
@@ -930,7 +930,7 @@
     "slug": "upstream-open-ai-status",
     "status": "up",
     "uptime": "91.70%",
-    "uptimeDay": "64.56%",
+    "uptimeDay": "64.61%",
     "uptimeWeek": "87.16%",
     "uptimeMonth": "91.70%",
     "uptimeYear": "91.70%",
