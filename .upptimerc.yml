@@ -397,6 +397,44 @@ sites:
     headers:
       - "Authorization: Bearer $HEALTH_CHECK_SECRET"
 
+  # A driver's Deliveries page: the live board, and the Completed tab's
+  # plain-language search — which is also the search both driver assistants run.
+  #
+  # Like Order History and Search below, this asserts the index's SHAPE rather
+  # than that Algolia answered, because every failure mode behind it is silent
+  # and all of them read to a driver as "you have no deliveries":
+  #   - a sort replica that doesn't exist is a hard 404 that fails the WHOLE
+  #     search;
+  #   - a replica that exists but was never given a ranking formula returns the
+  #     primary's order, so ascending and descending come back identical and the
+  #     arrow in the UI simply lies;
+  #   - a numeric filter on an attribute the index doesn't declare EXCLUDES
+  #     every record, so "deliveries that made me more than $5" answers "you
+  #     have never had a well-paying job".
+  #
+  # Pay gets checked twice over, because it is the one that was shipped broken
+  # for months: the attribute has to be declared on the PRIMARY and forwarded to
+  # the pay REPLICA, since a filter applied while sorting runs against the
+  # replica — declaring only on the primary breaks exactly "best paying jobs
+  # over $10" while each half works alone. The DRIVER_PAY_SORTABLE flag and the
+  # index must also agree in BOTH directions, so neither can ship without the
+  # other.
+  #
+  # It also runs the real query builder under a sentinel driver id (a non-empty
+  # result would mean the per-driver scope has stopped holding — the one failure
+  # here that is a privacy problem rather than an empty list), the board's own
+  # queries, and a metadata retrieve confirming the search box's parser model
+  # still exists. No completion is ever billed.
+  #
+  # ~9 Algolia getSettings plus two searches, several Firestore reads and that
+  # model lookup, hence the wider bound than a single-query check.
+  - name: Driver Deliveries and Search
+    slug: driver-orders-flow
+    url: https://www.sarvabazaar.com/api/health/flow-driver-orders
+    maxResponseTime: 10000
+    headers:
+      - "Authorization: Bearer $HEALTH_CHECK_SECRET"
+
   # Broader than the name suggests, and deliberately so. This used to call a
   # pure function with an empty array and assert the totals came back zero —
   # green forever, whatever happened to the real thing. It now exercises the
