@@ -426,7 +426,25 @@ sites:
   # queries, and a metadata retrieve confirming the search box's parser model
   # still exists. No completion is ever billed.
   #
-  # ~9 Algolia getSettings plus two searches, several Firestore reads and that
+  # Two more silent failures added 2026-08-11, both proven against live records
+  # rather than asserted from settings:
+  #   - the text fallback. The search parser leaves unclassifiable prose in the
+  #     query ("a $90 order that barely paid anything" leaves "barely paid
+  #     anything"), and Algolia's removeWordsIfNoResults:"allOptional" does NOT
+  #     rescue it — that only relaxes the AND between words to an OR, so a
+  #     phrase where no word matches anything still returns nothing. The builder
+  #     retries once with the text removed; without that, one stray adjective
+  #     vetoes a perfect filter set and the driver is told they have no such
+  #     deliveries. The check runs the pair and compares counts;
+  #   - the two scopes. "available" is the unclaimed pool and is scoped by
+  #     STATUS, not driverID (it has none). If that ever started honouring a
+  #     driver id it would return nothing and every driver would be told there
+  #     is no work; if "mine" stopped honouring one, a driver would see somebody
+  #     else's history. Both directions are checked with the sentinel.
+  # The fallback half is SKIPPED, not failed, when the pool is empty — no
+  # unclaimed work is a normal Tuesday, not an incident.
+  #
+  # ~9 Algolia getSettings plus five searches, several Firestore reads and that
   # model lookup, hence the wider bound than a single-query check.
   - name: Driver Deliveries and Search
     slug: driver-orders-flow
@@ -476,9 +494,20 @@ sites:
   # confirming the search box's parser model still exists, because a retired one
   # degrades to plain text matching without erring.
   #
-  # Five sequential Algolia getSettings plus a search, two Firestore reads and
-  # that model lookup, hence the wider bound than a single-query check.
-  # Measured ~570-890ms server-side warm.
+  # Added 2026-08-11: the same text fallback the driver check covers. The search
+  # parser leaves unclassifiable prose in the query ("that big order that took
+  # forever" leaves "took forever"), and removeWordsIfNoResults:"allOptional"
+  # does NOT rescue it — it only relaxes the AND between words to an OR, so a
+  # phrase where no word matches anything still returns nothing. The builder
+  # retries once without the text; the check runs the pair and compares counts.
+  # It samples a REAL shopper out of the index to do it, because this builder
+  # always applies its customerID scope and a fake id would make both halves
+  # agree at zero — a check that passes by matching nothing is worse than none.
+  # Skipped, not failed, on an index with no finished orders.
+  #
+  # Five sequential Algolia getSettings plus four searches, two Firestore reads
+  # and that model lookup, hence the wider bound than a single-query check.
+  # Measured ~570-890ms server-side warm, ~780ms with the fallback pair.
   - name: Order History and Search
     slug: customer-orders-flow
     url: https://www.sarvabazaar.com/api/health/flow-customer-orders
