@@ -285,6 +285,29 @@ sites:
     headers:
       - "Authorization: Bearer $HEALTH_CHECK_SECRET"
 
+  # Warns drivers 30 days, 7 days and the day a compliance document lapses.
+  # Silence here is invisible until it is expensive: expiry blocks the next
+  # accept the moment a date passes, so a driver who was never warned simply
+  # finds themselves refused a job one morning with no notice. Daily, because
+  # the stages are daily — a late run turns "7 days left" into "one day left".
+  - name: Document Expiry Reminders
+    slug: driver-expiry-reminders
+    url: https://www.sarvabazaar.com/api/health/functions?job=driverExpiryReminders
+    maxResponseTime: 5000
+    headers:
+      - "Authorization: Bearer $HEALTH_CHECK_SECRET"
+
+  # Deletes superseded document images after 90 days and archived compliance
+  # records after 7 years. If it stops, nothing breaks and nobody notices —
+  # which is the problem: photographs of drivers' licences accumulate in the
+  # bucket indefinitely, including for accounts that were closed.
+  - name: Driver Document Retention
+    slug: purge-driver-compliance
+    url: https://www.sarvabazaar.com/api/health/functions?job=purgeDriverComplianceData
+    maxResponseTime: 5000
+    headers:
+      - "Authorization: Bearer $HEALTH_CHECK_SECRET"
+
   # ---------------- Event-driven function checks ----------------
   # The dead-man's switch above cannot work for a Firestore trigger: it fires on
   # data events, so "hasn't run in three hours" is normal when nobody edited
@@ -457,6 +480,34 @@ sites:
   - name: Driver Report
     slug: driver-report-flow
     url: https://www.sarvabazaar.com/api/health/flow-driver-report
+    maxResponseTime: 5000
+    headers:
+      - "Authorization: Bearer $HEALTH_CHECK_SECRET"
+
+  # Driver compliance: which documents a driver owes, whether they are valid,
+  # and everything that reads that answer — the accept gate on both paths, the
+  # onboarding hold, the expiry reminder cadence, and the storage path guard.
+  #
+  # Every failure mode here is SILENT, which is the only reason this is worth a
+  # monitor. Nothing throws in production when it breaks:
+  #   - an empty required-documents list makes every driver "compliant" and the
+  #     gate waves everyone through
+  #   - expiry stored instead of derived leaves a lapsed licence reading as
+  #     approved forever
+  #   - a path guard that stops rejecting other drivers' folders lets a driver
+  #     register somebody else's object as their own document
+  #   - a block code with no message tells a refused driver only that "that
+  #     action couldn't be completed", which is what the voice path really said
+  #     until the two message tables were merged
+  #   - reminder de-duplication breaking emails the same lapsed document every
+  #     morning until deliverability is gone
+  #
+  # Pure arithmetic against fixtures with real dates, plus two reads against a
+  # sentinel driver who owns nothing. The response name reports whether
+  # enforcement is currently on, so the status page shows which mode is live.
+  - name: Driver Compliance
+    slug: driver-compliance-flow
+    url: https://www.sarvabazaar.com/api/health/flow-driver-compliance
     maxResponseTime: 5000
     headers:
       - "Authorization: Bearer $HEALTH_CHECK_SECRET"
