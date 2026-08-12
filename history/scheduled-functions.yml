@@ -1,7 +1,7 @@
 url: https://www.sarvabazaar.com/api/health/functions
-status: up
-code: 200
-responseTime: 102
-lastUpdated: 2026-08-11T23:41:35.555Z
+status: down
+code: 503
+responseTime: 1190
+lastUpdated: 2026-08-12T21:21:32.490Z
 startTime: 2026-08-09T21:25:36.623Z
 generator: Upptime <https://github.com/upptime/upptime>
