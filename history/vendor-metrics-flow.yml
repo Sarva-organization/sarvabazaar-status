@@ -1,7 +1,7 @@
 url: https://www.sarvabazaar.com/api/health/flow-vendor-metrics
-status: down
-code: 503
-responseTime: 246
-lastUpdated: 2026-08-13T20:02:24.643Z
+status: up
+code: 200
+responseTime: 230
+lastUpdated: 2026-08-13T22:29:22.281Z
 startTime: 2026-07-31T02:19:45.963Z
 generator: Upptime <https://github.com/upptime/upptime>
