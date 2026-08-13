@@ -423,6 +423,16 @@ sites:
       - 401
     maxResponseTime: 5000
 
+  # The metrics BOTH vendor assistants answer from — the Algolia aggregation,
+  # the stock-value sum and the vendor_stats rollup — plus the two fingerprints
+  # that keep the cache honest.
+  #
+  # Those fingerprints are the reason this needs watching. Each swallows its own
+  # errors and reports "cannot tell", deliberately: one that reported "changed"
+  # on failure would rebuild from Algolia on every assistant turn. The cost is
+  # that a missing inventory index degrades the cache to a bare five-minute
+  # timer, and both engines start quoting stale stock and inventory value with
+  # nothing anywhere saying so. The check runs the same two reads unswallowed.
   - name: Shop Owner Dashboard
     slug: vendor-metrics-flow
     url: https://www.sarvabazaar.com/api/health/flow-vendor-metrics
