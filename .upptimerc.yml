@@ -172,6 +172,26 @@ sites:
     headers:
       - "Authorization: Bearer $HEALTH_CHECK_SECRET"
 
+  # Whether a shop counts as open is what decides whether it can be ordered
+  # from, and every way that decision breaks is silent. The sharp one is the
+  # timezone: opening hours are stored as bare wall-clock strings with no zone
+  # attached, so they only mean anything read in the store's own timezone, and
+  # that needs full ICU in the deployed runtime. A Node build without it accepts
+  # the timeZone option and quietly ignores it — every shop then opens and
+  # closes on UTC, four hours early, with nothing logged. The other two are
+  # mirror images: a shop with no hours on file must stay orderable, so if
+  # "unknown" ever collapsed to "closed" every such store would stop selling,
+  # and if api/vendors stopped publishing businessHours every shop would read as
+  # unknown and closed stores would take orders. Checked against the deployed
+  # runtime and a live sample of 20 shops, since the logic itself is covered at
+  # build time.
+  - name: Shop Opening Hours
+    slug: shop-hours-flow
+    url: https://www.sarvabazaar.com/api/health/flow-shop-hours
+    maxResponseTime: 5000
+    headers:
+      - "Authorization: Bearer $HEALTH_CHECK_SECRET"
+
   - name: Search Results
     slug: search-flow
     url: https://www.sarvabazaar.com/api/health/flow-search
@@ -404,7 +424,7 @@ sites:
   # Check header, so this stays a single expected code in production where App
   # Check is enforced. 403 is reserved for requireRoles, which neither route uses
   # — if one ever starts, that shows up here as a failure rather than silently.
-  - name: Payout History Auth Gate
+  - name: Payout History Protection
     slug: payouts-orders-auth
     url: https://www.sarvabazaar.com/api/payouts/orders
     expectedStatusCodes:
@@ -415,7 +435,7 @@ sites:
   # 405 from the framework without ever reaching the auth wrapper, which would
   # pass while proving nothing. Safe to call unauthenticated — it 401s before it
   # can mint a Stripe AccountSession.
-  - name: Payout Session Auth Gate
+  - name: Payout Setup Protection
     slug: payouts-session-auth
     url: https://www.sarvabazaar.com/api/payouts/session
     method: POST
@@ -683,44 +703,256 @@ sites:
     headers:
       - "Authorization: Bearer $HEALTH_CHECK_SECRET"
 
+  # ---------------- Safeguards, which fail without failing ----------------
+  # Five checks with one thing in common: the thing they watch is designed to
+  # stay quiet, so when it breaks nothing throws, nothing logs, and every
+  # outward sign is identical to it working correctly. None of them can be
+  # covered by a build-time test, because each asserts something about the
+  # DEPLOYED runtime or the LIVE collection rather than about the source.
+
+  # New accounts still being written the way sign-in reads them.
+  #
+  # A signup path that stops writing one of these rows still produces an account
+  # that looks perfect — the auth record is created, the user lands in the
+  # portal, because the signup session is already authenticated. The break
+  # surfaces only when that person signs out and comes back, and only for
+  # accounts created since; everyone who signed up earlier is fine, Firestore is
+  # fine, Auth is fine, and nothing anywhere logs. So this samples the NEWEST
+  # account in each collection, which is where a broken signup shows up first
+  # and, for a while, only.
+  #
+  # It also probes the sign-in endpoint with a deliberately malformed token. A
+  # token-validation error is the HEALTHY answer: reaching that point means the
+  # request cleared both the API key and App Check enforcement. What that
+  # defends is the key itself — rotate it without redeploying and Vercel keeps
+  # serving the old one baked in at build time, and every sign-in in the app
+  # answers "API key not valid". No account is created and none is touched.
+  - name: New Account Sign-In
+    slug: auth-nav-flow
+    url: https://www.sarvabazaar.com/api/health/flow-auth-nav
+    maxResponseTime: 8000
+    headers:
+      - "Authorization: Bearer $HEALTH_CHECK_SECRET"
+
+  # A refusal must not answer a question the caller was not entitled to ask.
+  #
+  # "That does not exist" and "that exists but is not yours" have to be the same
+  # response, or the pair is an enumeration oracle: you never read the row, but
+  # you learn it is real, for every id you care to try. Two things here exist
+  # only once deployed, which is why a test cannot stand in for it — what the
+  # admin doors ACTUALLY answer (three internet-reachable routes behind one
+  # shared secret, where a regression to 401 is a perfectly valid response that
+  # nobody would notice until someone was scanning us), and whether the 403 and
+  # 404 paths are still the same function in the shipped bundle rather than two
+  # that a transform allowed to drift apart.
+  - name: Private Data Protection
+    slug: authz-masking-flow
+    url: https://www.sarvabazaar.com/api/health/flow-authz-masking
+    maxResponseTime: 8000
+    headers:
+      - "Authorization: Bearer $HEALTH_CHECK_SECRET"
+
+  # What a failure is allowed to say to a person, graded against the deployed
+  # build rather than the source.
+  #
+  # Two runtime-only failures. A route can start returning the raw SDK message
+  # in a 500 body — a middleware, a wrapper or a framework default putting back
+  # what the source carefully logs instead of returns — and a response carrying
+  # "Missing or insufficient permissions." is still a perfectly valid response,
+  # so nothing catches it. And the friendly-message table is a plain lookup, so
+  # a bad tree-shake that drops the module leaves every call returning its
+  # fallback: no error, no crash, just every message in the app going generic at
+  # once. Errors are provoked with malformed input, never with anything that
+  # writes. It is the slowest check here because it makes real HTTP requests to
+  # our own routes and waits for each to fail.
+  - name: Error Messages
+    slug: error-messages-flow
+    url: https://www.sarvabazaar.com/api/health/flow-error-messages
+    maxResponseTime: 15000
+    headers:
+      - "Authorization: Bearer $HEALTH_CHECK_SECRET"
+
+  # The rate limiter is deliberately fail-open — if its store is unreachable it
+  # allows the request and logs a warning, because a limiter that 500s takes
+  # down the whole API surface it was meant to protect. That choice is the
+  # entire reason this row exists: every way the limiter breaks looks exactly
+  # like the limiter working.
+  #
+  # A store it cannot reach degrades every durable tier to per-instance memory,
+  # which on a serverless deploy makes the real ceiling (limit x warm lambdas) —
+  # voice and payment stop being bounded and nothing says so. Buckets that never
+  # reject (a bad refill, a limit raised to something absurd, a policy table
+  # edited to zero rules) are indistinguishable from low traffic. Run against a
+  # synthetic tier, so no real caller's quota is touched.
+  - name: Request Rate Limits
+    slug: rate-limit-flow
+    url: https://www.sarvabazaar.com/api/health/flow-rate-limit
+    maxResponseTime: 5000
+    headers:
+      - "Authorization: Bearer $HEALTH_CHECK_SECRET"
+
+  # The daily AI budget, fail-open for the same reason and with the same
+  # consequence: a budget that 500s takes down every assistant surface it was
+  # meant to protect, so when it breaks it breaks silently.
+  #
+  # An unreachable store reports "cannot tell" and allows everything, forever,
+  # leaving the rate limiter as the only remaining ceiling. Charges that stop
+  # landing are swallowed by design — losing a charge must never fail the
+  # request that earned it — so spend can stop accumulating while every request
+  # still succeeds. A mispriced or unpriced model makes real usage cost nothing.
+  # And a budget misconfigured to zero, or to less than one voice session, locks
+  # a whole role out of a feature with no error anywhere. Checked against the
+  # live collection and the live price table, not a fake store.
+  - name: AI Usage Limits
+    slug: quota-flow
+    url: https://www.sarvabazaar.com/api/health/flow-quota
+    maxResponseTime: 5000
+    headers:
+      - "Authorization: Bearer $HEALTH_CHECK_SECRET"
+
   # ---------------- Upstream vendor status, checked directly ----------------
-  # Confirmed via direct curl (not assumed) which vendors expose a real
-  # public JSON status API vs. which don't:
-  #   - OpenAI, GitHub: real Statuspage.io API at /api/v2/status.json
-  #   - EmailJS: real Better Stack API at /index.json (different field names)
-  #   - Stripe, Algolia: their status pages are custom-built SPAs — hitting
-  #     /api/v2/status.json returns their HTML app shell, not real data, so
-  #     these are plain page-load checks only (weaker signal: proves their
-  #     status page is reachable, not a parsed operational/degraded state).
-  # This answers "is it them or us" when one of our own checks above fails.
+  # "Is it them or us" when one of our own checks above goes red.
+  #
+  # Each row watches ONE named component of a provider's status page — the
+  # specific API surface this app calls — rather than the page's overall
+  # indicator. The overall indicator is an OR across everything the provider
+  # sells: OpenAI's rolls in Sora, ChatGPT Atlas, Codex and the GPT store, and
+  # Vercel's rolls in twenty CDN cities plus v0. None of those are reachable
+  # from this app, so a red there was a red here that no customer could ever
+  # feel, and a real degradation of the one surface we DO use was averaged into
+  # the same green as everything else.
+  #
+  # Mechanism: Upptime supports a single body assertion per monitor, so each
+  # component gets its own row, keyed to the exact JSON pair Statuspage emits
+  # (`"name":"X","status":"operational"` with no whitespace between them).
+  # Every substring below was confirmed against the live payload to appear
+  # exactly once, so none of them can be satisfied by a different component's
+  # entry.
+  #
+  # Confirmed by direct request (not assumed) which providers expose what:
+  #   - OpenAI, Vercel, GitHub: Statuspage.io, per-component at
+  #     /api/v2/components.json
+  #   - Algolia: its own API at /1/status, per CLUSTER — narrower than a
+  #     component, since it names the machines this account is actually on
+  #   - EmailJS: Better Stack at /index.json, whole-page state only (see below)
+  #   - Stripe: no machine-readable status at all (see below)
 
-  - name: Vercel
-    slug: upstream-vercel-status
-    url: https://www.vercel-status.com/api/v2/status.json
-    __dangerous__body_down_if_text_missing: '"indicator":"none"'
+  # --- OpenAI: the four API surfaces this app calls, and nothing else ---
+  # Everything else on that page (ChatGPT, Sora, Codex, Atlas, GPTs, Ads,
+  # FedRAMP, fine-tuning, image generation) is a product we do not use.
 
-  - name: OpenAI
+  # Every text engine — all four copilots and the four voice modes' tool calls.
+  - name: OpenAI Chat
     slug: upstream-open-ai-status
-    url: https://status.openai.com/api/v2/status.json
-    __dangerous__body_down_if_text_missing: '"indicator":"none"'
+    url: https://status.openai.com/api/v2/components.json
+    __dangerous__body_down_if_text_missing: '"name":"Chat Completions","status":"operational"'
 
-  - name: GitHub
+  # The four voice modes. Audio goes browser-to-OpenAI over WebRTC, so this is
+  # the one upstream component whose failure we cannot see from our own server
+  # at all — no request of ours is involved once the call is up.
+  - name: OpenAI Voice
+    slug: upstream-open-ai-realtime
+    url: https://status.openai.com/api/v2/components.json
+    __dangerous__body_down_if_text_missing: '"name":"Realtime","status":"operational"'
+
+  # Semantic search. Both halves — the stored product vectors and the query
+  # embedded against them — come from this endpoint.
+  - name: OpenAI Embeddings
+    slug: upstream-open-ai-embeddings
+    url: https://status.openai.com/api/v2/components.json
+    __dangerous__body_down_if_text_missing: '"name":"Embeddings","status":"operational"'
+
+  # Spoken input transcribed and translated (api/stt/translate).
+  - name: OpenAI Speech
+    slug: upstream-open-ai-audio
+    url: https://status.openai.com/api/v2/components.json
+    __dangerous__body_down_if_text_missing: '"name":"Audio","status":"operational"'
+
+  # --- Vercel: the three runtime components this deployment sits on ---
+  # Builds, Git integrations, the dashboard and the twenty CDN cities are
+  # deliberately excluded: a broken build blocks a DEPLOY, not the running site,
+  # and no single CDN city stands for a global audience. DNS is excluded too —
+  # sarvabazaar.com is served by Google Cloud DNS, not Vercel.
+
+  # Every API route and every server-rendered page in this app.
+  - name: Vercel Functions
+    slug: upstream-vercel-status
+    url: https://www.vercel-status.com/api/v2/components.json
+    __dangerous__body_down_if_text_missing: '"name":"Functions","status":"operational"'
+
+  # The revalidation cache behind the shop, vendor and order pages. Its failure
+  # mode is staleness rather than an error, so nothing else here would catch it.
+  - name: Vercel Data Cache
+    slug: upstream-vercel-data-cache
+    url: https://www.vercel-status.com/api/v2/components.json
+    __dangerous__body_down_if_text_missing: '"name":"Data Cache","status":"operational"'
+
+  # Every product photo, shop cover and hero image on the site.
+  - name: Vercel Image Optimization
+    slug: upstream-vercel-image-optimization
+    url: https://www.vercel-status.com/api/v2/components.json
+    __dangerous__body_down_if_text_missing: '"name":"Image Optimization","status":"operational"'
+
+  # --- GitHub: the three components this status page itself runs on ---
+  # All three are about monitoring rather than the shop: if they fail, the shop
+  # is fine and THIS PAGE is the thing that has stopped telling the truth.
+
+  # Runs the monitor. If Actions stops, every row here silently freezes at its
+  # last known value rather than going red.
+  - name: GitHub Actions
     slug: upstream-git-hub-status
-    url: https://www.githubstatus.com/api/v2/status.json
-    __dangerous__body_down_if_text_missing: '"indicator":"none"'
+    url: https://www.githubstatus.com/api/v2/components.json
+    __dangerous__body_down_if_text_missing: '"name":"Actions","status":"operational"'
 
+  # Files incidents and posts the summary — also what our own Incident Reporting
+  # check above calls.
+  - name: GitHub API
+    slug: upstream-git-hub-api
+    url: https://www.githubstatus.com/api/v2/components.json
+    __dangerous__body_down_if_text_missing: '"name":"API Requests","status":"operational"'
+
+  # Serves status.sarvabazaar.com. A red here means you are unlikely to be
+  # reading this.
+  - name: GitHub Pages
+    slug: upstream-git-hub-pages
+    url: https://www.githubstatus.com/api/v2/components.json
+    __dangerous__body_down_if_text_missing: '"name":"Pages","status":"operational"'
+
+  # --- Algolia: the one cluster this account's indices live on ---
+  # /1/status reports all ~300 shared clusters. Ours is c23-usw, resolved from
+  # /1/incidents?app_id=<our app id>, which answers scoped to the account. Every
+  # other cluster on that page belongs to somebody else, so the page-wide view
+  # this replaces was almost entirely other people's outages.
+  - name: Algolia Search Cluster
+    slug: upstream-algolia-status-page-only
+    url: https://status.algolia.com/1/status
+    __dangerous__body_down_if_text_missing: '"c23-usw":"operational"'
+
+  # --- EmailJS: whole-page state, because it cannot be narrowed ---
+  # We use only their REST API; their page also covers a dashboard, an account
+  # system and a marketing site. Better Stack DOES publish per-resource state,
+  # but it puts a changing availability percentage between the resource's name
+  # and its status, and Upptime's body assertion is a plain substring match — so
+  # no single fixed string can span the two. Every other narrowing was probed
+  # and does not exist: there is no per-resource endpoint, and no query
+  # parameter filters the payload. So this stays the page aggregate, and can go
+  # red for something we do not use.
   - name: EmailJS
     slug: upstream-email-js-status
     url: https://status.emailjs.com/index.json
     __dangerous__body_down_if_text_missing: '"aggregate_state":"operational"'
 
+  # --- Stripe: reachability only, because there is nothing else to read ---
+  # status.stripe.com is a client-rendered app with no Statuspage API behind it.
+  # The two JSON endpoints its own bundle fetches, /current and /current/full,
+  # are frozen: both answer 200 with `last-modified: 9 Feb 2024` and a
+  # `currentTime` of 1707502134, through every Stripe incident since. Asserting
+  # on them would be a monitor that can never go red, which is worse than no
+  # monitor. So this proves their status page is reachable and nothing more —
+  # our own Payments check above is the real signal.
   - name: Stripe
     slug: upstream-stripe-status-page-only
     url: https://status.stripe.com/
-
-  - name: Algolia
-    slug: upstream-algolia-status-page-only
-    url: https://status.algolia.com/
 
 # Response-time chart on each per-monitor page. Upptime defaults to a mint
 # green; these match the status green used elsewhere.
@@ -1218,16 +1450,132 @@ status-website:
       content: "Order retrieval from an order number and email address.";
     }
 
-    section.live-status article:has(a[href$="/history/upstream-vercel-status"]) h4::after {
-      content: "Hosting provider for sarvabazaar.com. Status reported by Vercel.";
+    section.live-status article:has(a[href$="/history/scheduled-functions"]) h4::after {
+      content: "Overnight clean-up and reconciliation jobs still running on schedule.";
+    }
+
+    section.live-status article:has(a[href$="/history/purge-pending-orders"]) h4::after {
+      content: "Stock returned to the shelf when a checkout is abandoned.";
+    }
+
+    section.live-status article:has(a[href$="/history/reconcile-failed-transfers"]) h4::after {
+      content: "Retries for a payout that failed after the customer was charged.";
+    }
+
+    section.live-status article:has(a[href$="/history/driver-expiry-reminders"]) h4::after {
+      content: "Warnings sent to a driver before a document expires.";
+    }
+
+    section.live-status article:has(a[href$="/history/purge-driver-compliance"]) h4::after {
+      content: "Deletion of driver documents once their retention period ends.";
+    }
+
+    section.live-status article:has(a[href$="/history/trigger-functions"]) h4::after {
+      content: "Stock totals, shop locations and search records kept in step with orders.";
+    }
+
+    section.live-status article:has(a[href$="/history/order-mirror"]) h4::after {
+      content: "Orders copied to the public record the tracking pages read.";
+    }
+
+    section.live-status article:has(a[href$="/history/payouts-page-flow"]) h4::after {
+      content: "Earnings pages shown to shop owners and drivers.";
+    }
+
+    section.live-status article:has(a[href$="/history/payouts-orders-auth"]) h4::after {
+      content: "Payout history refused to anyone not signed in.";
+    }
+
+    section.live-status article:has(a[href$="/history/payouts-session-auth"]) h4::after {
+      content: "Payout account setup refused to anyone not signed in.";
+    }
+
+    section.live-status article:has(a[href$="/history/driver-report-flow"]) h4::after {
+      content: "The earnings report drivers download for their records.";
+    }
+
+    section.live-status article:has(a[href$="/history/driver-compliance-flow"]) h4::after {
+      content: "Licence, insurance and registration checked before a driver takes a job.";
+    }
+
+    section.live-status article:has(a[href$="/history/driver-orders-flow"]) h4::after {
+      content: "A driver's deliveries board and the search across completed jobs.";
+    }
+
+    section.live-status article:has(a[href$="/history/customer-orders-flow"]) h4::after {
+      content: "Past orders, and searching through them in plain language.";
+    }
+
+    section.live-status article:has(a[href$="/history/customer-profile-flow"]) h4::after {
+      content: "Account details, saved addresses and the spending summary.";
+    }
+
+    section.live-status article:has(a[href$="/history/shop-hours-flow"]) h4::after {
+      content: "Whether a shop counts as open, in its own local time, before an order is taken.";
+    }
+
+    section.live-status article:has(a[href$="/history/auth-nav-flow"]) h4::after {
+      content: "Whether an account created today can still sign in tomorrow.";
+    }
+
+    section.live-status article:has(a[href$="/history/authz-masking-flow"]) h4::after {
+      content: "Refusals that give nothing away about data you are not entitled to see.";
+    }
+
+    section.live-status article:has(a[href$="/history/error-messages-flow"]) h4::after {
+      content: "Failures explained in plain language, with no internal detail leaked.";
+    }
+
+    section.live-status article:has(a[href$="/history/rate-limit-flow"]) h4::after {
+      content: "Limits that keep voice, payment and assistant requests within bounds.";
+    }
+
+    section.live-status article:has(a[href$="/history/quota-flow"]) h4::after {
+      content: "The daily budget that keeps AI and voice usage within its ceiling.";
     }
 
     section.live-status article:has(a[href$="/history/upstream-open-ai-status"]) h4::after {
-      content: "Provider for voice and AI features. Status reported by OpenAI.";
+      content: "Chat Completions, the OpenAI surface behind every text assistant. Status reported by OpenAI.";
+    }
+
+    section.live-status article:has(a[href$="/history/upstream-open-ai-realtime"]) h4::after {
+      content: "Realtime, the OpenAI surface behind voice ordering. Status reported by OpenAI.";
+    }
+
+    section.live-status article:has(a[href$="/history/upstream-open-ai-embeddings"]) h4::after {
+      content: "Embeddings, the OpenAI surface behind search relevance. Status reported by OpenAI.";
+    }
+
+    section.live-status article:has(a[href$="/history/upstream-open-ai-audio"]) h4::after {
+      content: "Audio, the OpenAI surface that transcribes speech. Status reported by OpenAI.";
+    }
+
+    section.live-status article:has(a[href$="/history/upstream-vercel-status"]) h4::after {
+      content: "Serverless functions, which run every page and API here. Status reported by Vercel.";
+    }
+
+    section.live-status article:has(a[href$="/history/upstream-vercel-data-cache"]) h4::after {
+      content: "The cache behind shop and order pages. Status reported by Vercel.";
+    }
+
+    section.live-status article:has(a[href$="/history/upstream-vercel-image-optimization"]) h4::after {
+      content: "Delivery of product and shop photography. Status reported by Vercel.";
     }
 
     section.live-status article:has(a[href$="/history/upstream-git-hub-status"]) h4::after {
-      content: "Provider for monitoring automation and this page. Status reported by GitHub.";
+      content: "Automation that runs these checks every five minutes. Status reported by GitHub.";
+    }
+
+    section.live-status article:has(a[href$="/history/upstream-git-hub-api"]) h4::after {
+      content: "Publication of the incident reports below. Status reported by GitHub.";
+    }
+
+    section.live-status article:has(a[href$="/history/upstream-git-hub-pages"]) h4::after {
+      content: "Hosting for this status page itself. Status reported by GitHub.";
+    }
+
+    section.live-status article:has(a[href$="/history/upstream-algolia-status-page-only"]) h4::after {
+      content: "The Algolia cluster this catalog is indexed on. Status reported by Algolia.";
     }
 
     section.live-status article:has(a[href$="/history/upstream-email-js-status"]) h4::after {
@@ -1236,10 +1584,6 @@ status-website:
 
     section.live-status article:has(a[href$="/history/upstream-stripe-status-page-only"]) h4::after {
       content: "Payment processing provider. Reachability of the Stripe status page.";
-    }
-
-    section.live-status article:has(a[href$="/history/upstream-algolia-status-page-only"]) h4::after {
-      content: "Search provider. Reachability of the Algolia status page.";
     }
 
     /* ---------- Live Status heading and range switcher ---------- */
