@@ -1,7 +1,7 @@
-url: https://status.algolia.com/
+url: https://status.algolia.com/1/status
 status: up
 code: 200
-responseTime: 34
-lastUpdated: 2026-08-14T23:23:33.472Z
+responseTime: 151
+lastUpdated: 2026-08-15T23:23:43.287Z
 startTime: 2026-07-31T02:20:59.909Z
 generator: Upptime <https://github.com/upptime/upptime>
