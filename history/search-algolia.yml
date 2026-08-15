@@ -1,7 +1,7 @@
 url: https://www.sarvabazaar.com/api/health/algolia
-status: up
-code: 200
-responseTime: 107
-lastUpdated: 2026-08-14T23:22:56.039Z
+status: down
+code: 503
+responseTime: 806
+lastUpdated: 2026-08-15T17:19:11.546Z
 startTime: 2026-07-31T02:17:53.005Z
 generator: Upptime <https://github.com/upptime/upptime>
