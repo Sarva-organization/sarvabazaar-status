@@ -810,6 +810,28 @@ sites:
     headers:
       - "Authorization: Bearer $HEALTH_CHECK_SECRET"
 
+  # The two write-through caches that keep AI enrichment affordable: one holding
+  # a vector per search phrase, one holding a web answer per product question.
+  # Both are retired by a Firestore TTL policy, which is configured in the
+  # console rather than in the repo — so the code can be entirely correct while
+  # nothing is deleting anything, for months, with no error anywhere. That is
+  # the whole reason this row exists.
+  #
+  # Every other way these caches fail is visible in the bill: one that stops
+  # answering shows up as spend, one that stops storing shows up as spend. One
+  # that stops EXPIRING shows up as nothing at all. Goes red when rows are days
+  # past their expiry and still present (no policy attached, or attached to the
+  # wrong field), or when a large number of rows carry no expiry stamp at all
+  # and so cannot be reached by any policy. Counts index entries rather than
+  # reading documents, and runs on the slow interval — this is a growth signal,
+  # not an outage.
+  - name: Cache Cleanup
+    slug: cache-hygiene
+    url: https://www.sarvabazaar.com/api/health/flow-cache-hygiene
+    maxResponseTime: 10000
+    headers:
+      - "Authorization: Bearer $HEALTH_CHECK_SECRET"
+
   # ---------------- Upstream vendor status, checked directly ----------------
   # "Is it them or us" when one of our own checks above goes red.
   #
