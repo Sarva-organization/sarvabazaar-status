@@ -232,12 +232,20 @@ sites:
       - "Authorization: Bearer $HEALTH_CHECK_SECRET"
 
   # The shared base under all four text engines and four voice modes: the API
-  # keys, the two indices their tool calls query, and the attributes those calls
-  # filter on. A missing key or a dropped facet surfaces as an assistant that
-  # says "I couldn't find anything" — indistinguishable from a genuinely empty
-  # result, and it never logs. Deliberately makes no model call, so this is
-  # three Algolia round trips rather than a billed completion per poll — the
-  # same bound as the other Algolia checks. Measured ~50ms server-side.
+  # keys, the three indices their tool calls query, and the attributes those
+  # calls filter on. A missing key or a dropped facet surfaces as an assistant
+  # that says "I couldn't find anything" — indistinguishable from a genuinely
+  # empty result, and it never logs.
+  # The third index is the shared product catalog the vendor assistant prefills
+  # new items from, and it fails the most quietly of all: the barcode branch
+  # filters on `barcode`, which Algolia rejects unless the attribute is faceted,
+  # so an index recreated without that setting breaks every scan while name
+  # search keeps working. The vendor just sees a product that "isn't in the
+  # catalog". It is also the likeliest index to be deleted outright, since the
+  # account sits at its plan's hard index ceiling and this is the newest slot.
+  # Deliberately makes no model call, so this is four Algolia round trips rather
+  # than a billed completion per poll — the same bound as the other Algolia
+  # checks. Measured ~50ms server-side.
   - name: Assistant Lookups
     slug: assistants-flow
     url: https://www.sarvabazaar.com/api/health/assistants
