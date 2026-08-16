@@ -832,6 +832,28 @@ sites:
     headers:
       - "Authorization: Bearer $HEALTH_CHECK_SECRET"
 
+  # Are the security rules actually serving traffic still the ones we wrote?
+  # Rules are the ONE part of this system deployable from outside the repo —
+  # the console has an editor and any checkout can `firebase deploy`. On
+  # 2026-08-15 the live Firestore ruleset was a fork present in no commit,
+  # carrying an inventory field whitelist that omitted the two timestamps every
+  # edit stamps; every vendor inventory edit was denied for a day while the
+  # repo, the code and the tests were all correct, and the only symptom was
+  # support mail. Nothing inside the deployment can see that, so this check
+  # asks Firebase directly: it resolves the released Firestore and Storage
+  # rulesets over the Rules API and re-checks the clauses that must not
+  # disappear. Grades meaning, not bytes — a console edit that adds a
+  # collection is not an outage; one that drops the inventory allowlist, breaks
+  # the index-delete escape that keeps phone changes working, or reopens bucket
+  # listing is. Slow interval: three HTTPS calls, and a ruleset only changes
+  # when somebody deploys one.
+  - name: Security Rules
+    slug: security-rules
+    url: https://www.sarvabazaar.com/api/health/flow-security-rules
+    maxResponseTime: 10000
+    headers:
+      - "Authorization: Bearer $HEALTH_CHECK_SECRET"
+
   # ---------------- Upstream vendor status, checked directly ----------------
   # "Is it them or us" when one of our own checks above goes red.
   #
