@@ -468,6 +468,42 @@ sites:
     headers:
       - "Authorization: Bearer $HEALTH_CHECK_SECRET"
 
+  # Whether an in-store scan can be confirmed at all — the one step in the
+  # portal that leaves Vercel entirely. Confirming posts straight from the
+  # browser to the posSaleIntake / posShipmentIntake Cloud Functions, and it is
+  # also the only step that moves stock, so nothing else here covers it: the
+  # dead-man's switch on Cloud Functions watches the SCHEDULED jobs, and these
+  # two are HTTP.
+  #
+  # Three ways it breaks, none of which show up anywhere else:
+  #   - NEXT_PUBLIC_FUNCTIONS_URL is baked into the client bundle at build time,
+  #     so a value that goes missing is not fixed by setting it in the Vercel
+  #     dashboard — it needs a redeploy. Unset, the submit resolves to a
+  #     same-origin /posSaleIntake and comes back as Next's 404 HTML;
+  #   - either function simply not being deployed;
+  #   - POS_INTAKE_ALLOWED_ORIGINS (a FUNCTIONS env var, set in functions/.env,
+  #     baked in at firebase deploy) not listing this origin. Every vendor's
+  #     confirm then 403s while the functions themselves are perfectly healthy,
+  #     and the functions say so once at cold start and never again.
+  #
+  # The probe is a CORS preflight and nothing else. Both handlers answer it and
+  # return 204 BEFORE App Check, before the bearer token, before the per-vendor
+  # rate limiter and before Firestore — so this cannot read, cannot write,
+  # cannot spend a vendor's request budget, and cannot be made to move stock.
+  # The route throttles itself to one real execution an hour, so the cost is a
+  # few hundred function invocations a month against a two-million free tier.
+  #
+  # 10s rather than the usual 5s: the executing probe can hit two cold
+  # 256MiB functions in us-east4, and the route's own 8s abort should be what
+  # reports a hung endpoint — with a tighter bound here, a cold start would be
+  # flagged as a slow response instead of the check saying which endpoint hung.
+  - name: In-Store Scan Intake
+    slug: scan-intake-flow
+    url: https://www.sarvabazaar.com/api/health/flow-scan-intake
+    maxResponseTime: 10000
+    headers:
+      - "Authorization: Bearer $HEALTH_CHECK_SECRET"
+
   # Same rewrite the Customer Dashboard check below got, for the same reason.
   # This used to call computeDriverMetrics({}, []) and assert the totals came
   # back zero — a function returning zeros for an empty array cannot fail, so it
