@@ -149,6 +149,27 @@ sites:
     headers:
       - "Authorization: Bearer $HEALTH_CHECK_SECRET"
 
+  # One row for three signals, not three rows. They share a failure mode — an
+  # order that cannot move — and splitting them would put three near-identical
+  # amber lights on a public board to say the same thing. The response body
+  # names which of the three is failing.
+  - name: Order Handover (live traffic)
+    slug: traffic-order-lifecycle
+    url: https://www.sarvabazaar.com/api/health/traffic?signal=order-pickup,order-deliver,order-cancel
+    maxResponseTime: 5000
+    headers:
+      - "Authorization: Bearer $HEALTH_CHECK_SECRET"
+
+  # The one path whose own failure cannot be reported through itself: this IS
+  # the reporting channel. Rare enough that it will usually read idle, which is
+  # green by design — the value is the failure ratio, not liveness.
+  - name: Support Requests (live traffic)
+    slug: traffic-support-ticket
+    url: https://www.sarvabazaar.com/api/health/traffic?signal=support-ticket
+    maxResponseTime: 5000
+    headers:
+      - "Authorization: Bearer $HEALTH_CHECK_SECRET"
+
   - name: Background Jobs
     slug: scheduled-functions
     url: https://www.sarvabazaar.com/api/health/functions
@@ -818,6 +839,14 @@ status-website:
 
     section.live-status article:has(a[href$="/history/support-git-hub-api"]) h4::after {
       content: "Publication of incident reports shown on this page.";
+    }
+
+    section.live-status article:has(a[href$="/history/traffic-order-lifecycle"]) h4::after {
+      content: "Drivers and shops moving real orders through pickup, delivery and cancellation.";
+    }
+
+    section.live-status article:has(a[href$="/history/traffic-support-ticket"]) h4::after {
+      content: "Support requests from real people reaching us successfully.";
     }
 
     section.live-status article:has(a[href$="/history/traffic-shop-search"]) h4::after {
