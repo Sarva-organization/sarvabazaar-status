@@ -108,24 +108,10 @@ sites:
     headers:
       - "Authorization: Bearer $HEALTH_CHECK_SECRET"
 
-  - name: Product Search
-    slug: search-algolia
-    url: https://www.sarvabazaar.com/api/health/algolia
-    maxResponseTime: 5000
-    headers:
-      - "Authorization: Bearer $HEALTH_CHECK_SECRET"
-
   - name: Voice and AI Assistant
     slug: ai-open-ai
     url: https://www.sarvabazaar.com/api/health/openai
     maxResponseTime: 8000
-    headers:
-      - "Authorization: Bearer $HEALTH_CHECK_SECRET"
-
-  - name: Maps and Addresses
-    slug: maps
-    url: https://www.sarvabazaar.com/api/health/maps
-    maxResponseTime: 5000
     headers:
       - "Authorization: Bearer $HEALTH_CHECK_SECRET"
 
@@ -136,150 +122,33 @@ sites:
     headers:
       - "Authorization: Bearer $HEALTH_CHECK_SECRET"
 
-  - name: Email Notifications
-    slug: email-alerts-config
-    url: https://www.sarvabazaar.com/api/health/email
+  # ---------------- Real traffic, not synthetic probes ----------------
+  # These rows replaced the checks that fired their own Algolia searches every
+  # five minutes. The real handlers now stamp a heartbeat on success and on
+  # failure, and this reads the stamp — one Firestore read in place of a metered
+  # search, measuring what users actually got rather than what an invented
+  # request would have got.
+  #
+  # They do NOT go red when nobody is shopping. A run of real failures with no
+  # success after it is red; silence is reported as idle and stays green, or
+  # this board would be red every night by 4am and trusted by no one. The case
+  # silence cannot cover — the site being down so no request ever arrives — is
+  # what the page checks at the top of this file are for.
+
+  - name: Shop Search (live traffic)
+    slug: traffic-shop-search
+    url: https://www.sarvabazaar.com/api/health/traffic?signal=shop-search
     maxResponseTime: 5000
     headers:
       - "Authorization: Bearer $HEALTH_CHECK_SECRET"
 
-  # Pure arithmetic with no external dependency, so the only thing that can
-  # make it slow is a cold start.
-  - name: Order Pricing
-    slug: pricing-flow
-    url: https://www.sarvabazaar.com/api/health/flow-quote
+  - name: Item Search (live traffic)
+    slug: traffic-item-search
+    url: https://www.sarvabazaar.com/api/health/traffic?signal=item-search
     maxResponseTime: 5000
     headers:
       - "Authorization: Bearer $HEALTH_CHECK_SECRET"
 
-  - name: Checkout
-    slug: checkout-flow
-    url: https://www.sarvabazaar.com/api/health/flow-checkout
-    maxResponseTime: 8000
-    headers:
-      - "Authorization: Bearer $HEALTH_CHECK_SECRET"
-
-  # Unlike everything else here, this one fails on the *data* being wrong rather
-  # than on a dependency being unreachable: checkout takes stock at draft time,
-  # before payment, so stock that is never handed back is stranded silently.
-  # Four Firestore queries (negative units, paid-but-unconfirmed orders,
-  # drafts past the purge window, inventory whose derived totals stopped
-  # tracking units), so the same bound as the other Firestore-only checks.
-  - name: Stock Accuracy
-    slug: checkout-stock-flow
-    url: https://www.sarvabazaar.com/api/health/flow-checkout-stock
-    maxResponseTime: 5000
-    headers:
-      - "Authorization: Bearer $HEALTH_CHECK_SECRET"
-
-  # Whether a shop counts as open is what decides whether it can be ordered
-  # from, and every way that decision breaks is silent. The sharp one is the
-  # timezone: opening hours are stored as bare wall-clock strings with no zone
-  # attached, so they only mean anything read in the store's own timezone, and
-  # that needs full ICU in the deployed runtime. A Node build without it accepts
-  # the timeZone option and quietly ignores it — every shop then opens and
-  # closes on UTC, four hours early, with nothing logged. The other two are
-  # mirror images: a shop with no hours on file must stay orderable, so if
-  # "unknown" ever collapsed to "closed" every such store would stop selling,
-  # and if api/vendors stopped publishing businessHours every shop would read as
-  # unknown and closed stores would take orders. Checked against the deployed
-  # runtime and a live sample of 20 shops, since the logic itself is covered at
-  # build time.
-  - name: Shop Opening Hours
-    slug: shop-hours-flow
-    url: https://www.sarvabazaar.com/api/health/flow-shop-hours
-    maxResponseTime: 5000
-    headers:
-      - "Authorization: Bearer $HEALTH_CHECK_SECRET"
-
-  - name: Search Results
-    slug: search-flow
-    url: https://www.sarvabazaar.com/api/health/flow-search
-    maxResponseTime: 5000
-    headers:
-      - "Authorization: Bearer $HEALTH_CHECK_SECRET"
-
-  # Asserts the *shape* of the search index rather than that Algolia answered,
-  # because every failure mode behind the shop grid is silent: a missing sort
-  # replica returns primary order, a filterOnly facet returns no counts, and a
-  # filter on an undeclared attribute returns zero hits. None of them error, so
-  # a shopper just sees an oddly-ordered grid or an empty shelf.
-  # Nine sequential getSettings calls (primary plus the four sort replicas,
-  # checked twice — once for facets, once for stray custom ranking) plus the
-  # approved-vendor read and one real scoped query, hence the wider bound than
-  # a single-query check. Measured ~580ms server-side warm.
-  - name: Product Filters and Sorting
-    slug: shop-search-flow
-    url: https://www.sarvabazaar.com/api/health/shop-search
-    maxResponseTime: 8000
-    headers:
-      - "Authorization: Bearer $HEALTH_CHECK_SECRET"
-
-  # The one check here whose failure is invisible even in the data: the query
-  # side and the stored vectors must come from the same embedding model, and if
-  # they drift apart nothing errors — findNearest just returns confident
-  # nonsense. Embeds one product's own text and compares it against that
-  # product's stored vector, so agreement should be near-total.
-  # Reads the whole inventory collection (embedding coverage degrades quietly as
-  # un-enriched items pile up) and then makes an OpenAI embeddings call, so this
-  # gets a looser bound than the rest — it is the only check here whose cost
-  # grows with the catalog. Measured ~2.1s server-side.
-  - name: Search Relevance
-    slug: semantic-search-flow
-    url: https://www.sarvabazaar.com/api/health/semantic-search
-    maxResponseTime: 15000
-    headers:
-      - "Authorization: Bearer $HEALTH_CHECK_SECRET"
-
-  # The shared base under all four text engines and four voice modes: the API
-  # keys, the three indices their tool calls query, and the attributes those
-  # calls filter on. A missing key or a dropped facet surfaces as an assistant
-  # that says "I couldn't find anything" — indistinguishable from a genuinely
-  # empty result, and it never logs.
-  # The third index is the shared product catalog the vendor assistant prefills
-  # new items from, and it fails the most quietly of all: the barcode branch
-  # filters on `barcode`, which Algolia rejects unless the attribute is faceted,
-  # so an index recreated without that setting breaks every scan while name
-  # search keeps working. The vendor just sees a product that "isn't in the
-  # catalog". It is also the likeliest index to be deleted outright, since the
-  # account sits at its plan's hard index ceiling and this is the newest slot.
-  # Deliberately makes no model call, so this is four Algolia round trips rather
-  # than a billed completion per poll — the same bound as the other Algolia
-  # checks. Measured ~50ms server-side.
-  - name: Assistant Lookups
-    slug: assistants-flow
-    url: https://www.sarvabazaar.com/api/health/assistants
-    maxResponseTime: 5000
-    headers:
-      - "Authorization: Bearer $HEALTH_CHECK_SECRET"
-
-  # Commits the real multi-document read-then-write transaction shape every
-  # order transition uses (seed batch, transaction over three docs, verify,
-  # cleanup batch), not the one-read one-write case that can never fail — hence
-  # the wider bound than a single-query check.
-  - name: Order Processing
-    slug: order-flow
-    url: https://www.sarvabazaar.com/api/health/flow-order
-    maxResponseTime: 8000
-    headers:
-      - "Authorization: Bearer $HEALTH_CHECK_SECRET"
-
-  - name: Order Confirmation
-    slug: order-confirmation-flow
-    url: https://www.sarvabazaar.com/api/health/flow-order-confirmation
-    maxResponseTime: 5000
-    headers:
-      - "Authorization: Bearer $HEALTH_CHECK_SECRET"
-
-  # A dead-man's switch rather than a reachability probe: the background jobs
-  # (abandoned-checkout purge, payout retries, storage cleanup, stats pruning,
-  # weekly account reconciliation/repair) fail by silently ceasing to fire, and
-  # a schedule that stops produces no invocation, no error and no log line to
-  # alert on. Cloud Scheduler's own lastAttemptTime is not a substitute — it has
-  # been observed a week stale on a job that demonstrably ran. So each job
-  # stamps Firestore on completion and this check fails when a stamp goes stale
-  # or records a failed run. Six document reads, so the same bound as the other
-  # Firestore-only checks. POS jobs are excluded while that work is in beta.
   - name: Background Jobs
     slug: scheduled-functions
     url: https://www.sarvabazaar.com/api/health/functions
@@ -371,67 +240,6 @@ sites:
     headers:
       - "Authorization: Bearer $HEALTH_CHECK_SECRET"
 
-  # Firestore reads plus a Stripe webhookEndpoints.list, hence the wider bound
-  # than the pure-Firestore checks.
-  - name: Payment Updates
-    slug: webhooks-flow
-    url: https://www.sarvabazaar.com/api/health/flow-webhooks
-    maxResponseTime: 8000
-    headers:
-      - "Authorization: Bearer $HEALTH_CHECK_SECRET"
-
-  - name: Shop and Driver Payouts
-    slug: payouts-flow
-    url: https://www.sarvabazaar.com/api/health/flow-payouts
-    maxResponseTime: 5000
-    headers:
-      - "Authorization: Bearer $HEALTH_CHECK_SECRET"
-
-  # The payouts PAGE, where the row above watches the money itself. One
-  # component serves /vendor/payouts and /driver/payouts, and both driver
-  # assistants answer "when do I get paid" from the same numbers — so a red here
-  # is the page and all four engines wrong together.
-  #
-  # Everything it asserts fails silently in production. The page draws "$0.00
-  # paid out" over an empty table just as readily for a broken earnings split as
-  # for a shop that has not sold anything, and nothing logs either way:
-  #   - the split itself. The vendor is owed the item subtotal and the driver the
-  #     delivery fee plus tip; paying either one `total` hands them the other's
-  #     money plus the customer's tax. Graded against a fixture whose fields are
-  #     all different, so confusing two of them cannot still add up;
-  #   - the order of the state test. A failed transfer is STILL a captured
-  #     charge, so checking capture first reports money nobody received as "Paid
-  #     out" — the worst sentence this page could print;
-  #   - created_at_ts being epoch seconds. This shipped wrong and dated every row
-  #     on both payout pages to January 1970. Sampled from live orders, since the
-  #     risk is a writer switching to milliseconds, not the reader;
-  #   - the (vendorID|driverID, created_at_ts) indexes, which 500 the whole page
-  #     when absent — and only in the environment that is missing one.
-  # It grades the functions the route actually calls rather than a copy, so it
-  # cannot drift green the way a re-implementation would. Two sentinel queries
-  # and one five-document read, so the same bound as the other Firestore checks.
-  # Measured ~270ms server-side warm.
-  - name: Payouts Page
-    slug: payouts-page-flow
-    url: https://www.sarvabazaar.com/api/health/flow-payouts-page
-    maxResponseTime: 5000
-    headers:
-      - "Authorization: Bearer $HEALTH_CHECK_SECRET"
-
-  # The two payout APIs' auth gate, checked from outside with NO credentials.
-  # Everything else here runs server-side against the handler's logic; these are
-  # the only rows that exercise the secureRoute wrapper itself, over real HTTP,
-  # the way an attacker would reach it.
-  #
-  # 401 is the pass condition, so both failure directions are caught by one
-  # assertion: a 200 means the gate opened and one signed-out request can read
-  # somebody's bank-transfer history, and a 5xx means the payouts page is broken
-  # for everyone who IS signed in. Only an exact 401 is both closed and working.
-  #
-  # withAuth returns 401 for a missing token, an invalid token AND a missing App
-  # Check header, so this stays a single expected code in production where App
-  # Check is enforced. 403 is reserved for requireRoles, which neither route uses
-  # — if one ever starts, that shows up here as a failure rather than silently.
   - name: Payout History Protection
     slug: payouts-orders-auth
     url: https://www.sarvabazaar.com/api/payouts/orders
@@ -451,485 +259,6 @@ sites:
       - 401
     maxResponseTime: 5000
 
-  # The metrics BOTH vendor assistants answer from — the Algolia aggregation,
-  # the stock-value sum and the vendor_stats rollup — plus the two fingerprints
-  # that keep the cache honest.
-  #
-  # Those fingerprints are the reason this needs watching. Each swallows its own
-  # errors and reports "cannot tell", deliberately: one that reported "changed"
-  # on failure would rebuild from Algolia on every assistant turn. The cost is
-  # that a missing inventory index degrades the cache to a bare five-minute
-  # timer, and both engines start quoting stale stock and inventory value with
-  # nothing anywhere saying so. The check runs the same two reads unswallowed.
-  - name: Shop Owner Dashboard
-    slug: vendor-metrics-flow
-    url: https://www.sarvabazaar.com/api/health/flow-vendor-metrics
-    maxResponseTime: 5000
-    headers:
-      - "Authorization: Bearer $HEALTH_CHECK_SECRET"
-
-  # Whether an in-store scan can be confirmed at all — the one step in the
-  # portal that leaves Vercel entirely. Confirming posts straight from the
-  # browser to the posSaleIntake / posShipmentIntake Cloud Functions, and it is
-  # also the only step that moves stock, so nothing else here covers it: the
-  # dead-man's switch on Cloud Functions watches the SCHEDULED jobs, and these
-  # two are HTTP.
-  #
-  # Three ways it breaks, none of which show up anywhere else:
-  #   - NEXT_PUBLIC_FUNCTIONS_URL is baked into the client bundle at build time,
-  #     so a value that goes missing is not fixed by setting it in the Vercel
-  #     dashboard — it needs a redeploy. Unset, the submit resolves to a
-  #     same-origin /posSaleIntake and comes back as Next's 404 HTML;
-  #   - either function simply not being deployed;
-  #   - POS_INTAKE_ALLOWED_ORIGINS (a FUNCTIONS env var, set in functions/.env,
-  #     baked in at firebase deploy) not listing this origin. Every vendor's
-  #     confirm then 403s while the functions themselves are perfectly healthy,
-  #     and the functions say so once at cold start and never again.
-  #
-  # The probe is a CORS preflight and nothing else. Both handlers answer it and
-  # return 204 BEFORE App Check, before the bearer token, before the per-vendor
-  # rate limiter and before Firestore — so this cannot read, cannot write,
-  # cannot spend a vendor's request budget, and cannot be made to move stock.
-  # The route throttles itself to one real execution an hour, so the cost is a
-  # few hundred function invocations a month against a two-million free tier.
-  #
-  # 10s rather than the usual 5s: the executing probe can hit two cold
-  # 256MiB functions in us-east4, and the route's own 8s abort should be what
-  # reports a hung endpoint — with a tighter bound here, a cold start would be
-  # flagged as a slow response instead of the check saying which endpoint hung.
-  - name: In-Store Scan Intake
-    slug: scan-intake-flow
-    url: https://www.sarvabazaar.com/api/health/flow-scan-intake
-    maxResponseTime: 10000
-    headers:
-      - "Authorization: Bearer $HEALTH_CHECK_SECRET"
-
-  # Same rewrite the Customer Dashboard check below got, for the same reason.
-  # This used to call computeDriverMetrics({}, []) and assert the totals came
-  # back zero — a function returning zeros for an empty array cannot fail, so it
-  # was green by construction. It now exercises the actual path: the
-  # driver_stats cache read, the transactions fingerprint, and the two live
-  # order queries the page runs beside it.
-  #
-  # Three things the sentinel account alone cannot prove are re-run over a
-  # fixture with real numbers in it, because every figure is legitimately zero
-  # for a driver who owns nothing:
-  #   - the aggregation. Its worst failure is an accepted-but-undelivered job
-  #     counting as earnings, which would report money the driver was never
-  #     paid;
-  #   - the "Available now" query. It is UNSCOPED, so a missing index reads as
-  #     an empty card — indistinguishable from no shop having anything packed;
-  #   - the chart's bucket counts. The page assumes 7 / 30 / 12, and a short
-  #     series silently changes what "the last 7 days" means.
-  #
-  # The payload it asserts field-by-field is also what both driver assistants
-  # answer earnings questions from, so a red here means all three are wrong —
-  # not just the page. A handful of Firestore round trips, so it keeps the 5s
-  # bound of the other Firestore-backed flows.
-  - name: Driver Dashboard
-    slug: driver-metrics-flow
-    url: https://www.sarvabazaar.com/api/health/flow-driver-metrics
-    maxResponseTime: 5000
-    headers:
-      - "Authorization: Bearer $HEALTH_CHECK_SECRET"
-
-  # The driver's exported report — the PDF and workbook behind "Export Driver
-  # Report", which drivers use to reconcile income at tax time.
-  #
-  # Every failure here is silent. Both generators are deliberately defensive, so
-  # a renamed or dropped field does not throw: the document still builds and
-  # still downloads, with "N/A" and "$0.00" where the numbers should be. So this
-  # asserts the payload's SHAPE — around thirty fields the two documents read by
-  # name — and its arithmetic, rather than that a call succeeded.
-  #
-  # Two of those sums are worth naming. A delivered order with no
-  # driverTransaction behind it is a real case, and if the merge stops folding
-  # those in the report simply under-reports what the driver earned. And
-  # pickup/delivery efficiency is STORED as a 0..1 ratio but REPORTED as a
-  # percentage — get that wrong and every driver is graded against thresholds of
-  # 70/80/90 they cannot reach, which is a bug this codebase has already had.
-  #
-  # Two indexed Firestore reads against a sentinel that owns nothing (a missing
-  # index there 500s the whole export), then pure arithmetic.
-  - name: Driver Report
-    slug: driver-report-flow
-    url: https://www.sarvabazaar.com/api/health/flow-driver-report
-    maxResponseTime: 5000
-    headers:
-      - "Authorization: Bearer $HEALTH_CHECK_SECRET"
-
-  # Driver compliance: which documents a driver owes, whether they are valid,
-  # and everything that reads that answer — the accept gate on both paths, the
-  # onboarding hold, the expiry reminder cadence, and the storage path guard.
-  #
-  # Every failure mode here is SILENT, which is the only reason this is worth a
-  # monitor. Nothing throws in production when it breaks:
-  #   - an empty required-documents list makes every driver "compliant" and the
-  #     gate waves everyone through
-  #   - expiry stored instead of derived leaves a lapsed licence reading as
-  #     approved forever
-  #   - a path guard that stops rejecting other drivers' folders lets a driver
-  #     register somebody else's object as their own document
-  #   - a block code with no message tells a refused driver only that "that
-  #     action couldn't be completed", which is what the voice path really said
-  #     until the two message tables were merged
-  #   - reminder de-duplication breaking emails the same lapsed document every
-  #     morning until deliverability is gone
-  #
-  # Pure arithmetic against fixtures with real dates, plus two reads against a
-  # sentinel driver who owns nothing. The response name reports whether
-  # enforcement is currently on, so the status page shows which mode is live.
-  - name: Driver Compliance
-    slug: driver-compliance-flow
-    url: https://www.sarvabazaar.com/api/health/flow-driver-compliance
-    maxResponseTime: 5000
-    headers:
-      - "Authorization: Bearer $HEALTH_CHECK_SECRET"
-
-  # A driver's Deliveries page: the live board, and the Completed tab's
-  # plain-language search — which is also the search both driver assistants run.
-  #
-  # Like Order History and Search below, this asserts the index's SHAPE rather
-  # than that Algolia answered, because every failure mode behind it is silent
-  # and all of them read to a driver as "you have no deliveries":
-  #   - a sort replica that doesn't exist is a hard 404 that fails the WHOLE
-  #     search;
-  #   - a replica that exists but was never given a ranking formula returns the
-  #     primary's order, so ascending and descending come back identical and the
-  #     arrow in the UI simply lies;
-  #   - a numeric filter on an attribute the index doesn't declare EXCLUDES
-  #     every record, so "deliveries that made me more than $5" answers "you
-  #     have never had a well-paying job".
-  #
-  # Pay gets checked twice over, because it is the one that was shipped broken
-  # for months: the attribute has to be declared on the PRIMARY and forwarded to
-  # the pay REPLICA, since a filter applied while sorting runs against the
-  # replica — declaring only on the primary breaks exactly "best paying jobs
-  # over $10" while each half works alone. The DRIVER_PAY_SORTABLE flag and the
-  # index must also agree in BOTH directions, so neither can ship without the
-  # other.
-  #
-  # It also runs the real query builder under a sentinel driver id (a non-empty
-  # result would mean the per-driver scope has stopped holding — the one failure
-  # here that is a privacy problem rather than an empty list), the board's own
-  # queries, and a metadata retrieve confirming the search box's parser model
-  # still exists. No completion is ever billed.
-  #
-  # Two more silent failures added 2026-08-11, both proven against live records
-  # rather than asserted from settings:
-  #   - the text fallback. The search parser leaves unclassifiable prose in the
-  #     query ("a $90 order that barely paid anything" leaves "barely paid
-  #     anything"), and Algolia's removeWordsIfNoResults:"allOptional" does NOT
-  #     rescue it — that only relaxes the AND between words to an OR, so a
-  #     phrase where no word matches anything still returns nothing. The builder
-  #     retries once with the text removed; without that, one stray adjective
-  #     vetoes a perfect filter set and the driver is told they have no such
-  #     deliveries. The check runs the pair and compares counts;
-  #   - the two scopes. "available" is the unclaimed pool and is scoped by
-  #     STATUS, not driverID (it has none). If that ever started honouring a
-  #     driver id it would return nothing and every driver would be told there
-  #     is no work; if "mine" stopped honouring one, a driver would see somebody
-  #     else's history. Both directions are checked with the sentinel.
-  # The fallback half is SKIPPED, not failed, when the pool is empty — no
-  # unclaimed work is a normal Tuesday, not an incident.
-  #
-  # ~9 Algolia getSettings plus five searches, several Firestore reads and that
-  # model lookup, hence the wider bound than a single-query check.
-  - name: Driver Deliveries and Search
-    slug: driver-orders-flow
-    url: https://www.sarvabazaar.com/api/health/flow-driver-orders
-    maxResponseTime: 10000
-    headers:
-      - "Authorization: Bearer $HEALTH_CHECK_SECRET"
-
-  # Broader than the name suggests, and deliberately so. This used to call a
-  # pure function with an empty array and assert the totals came back zero —
-  # green forever, whatever happened to the real thing. It now exercises the
-  # actual path: the customer_stats cache read, the fingerprint query and the
-  # recent-orders read, then asserts the payload's SHAPE field by field.
-  #
-  # That payload is what BOTH customer assistants answer spending questions
-  # from (injected as context for the text engine, returned by get_metrics for
-  # voice) as well as what the dashboard renders, so a red here means all three
-  # are wrong — not just the page. It also pushes a real order through the
-  # separate module the PDF/Excel downloads are built from.
-  #
-  # Real Firestore reads now, so it shares the 5s bound of the other
-  # Firestore-backed flows rather than the sub-second one a pure function had.
-  - name: Customer Dashboard
-    slug: customer-metrics-flow
-    url: https://www.sarvabazaar.com/api/health/flow-customer-metrics
-    maxResponseTime: 5000
-    headers:
-      - "Authorization: Bearer $HEALTH_CHECK_SECRET"
-
-  # A shopper's order history — the My Orders page's Past tab and the same
-  # search both customer assistants run. All three are one Algolia query, and
-  # every way it breaks is silent or actively misleading, so this asserts the
-  # index's SHAPE rather than that Algolia answered:
-  #   - a sort replica that doesn't exist is a hard 404 that fails the WHOLE
-  #     search, so the shopper is told they have no orders;
-  #   - a replica that exists but was never given a ranking formula returns the
-  #     primary's order, so ascending and descending come back identical;
-  #   - a numeric filter on an attribute that isn't declared for filtering
-  #     EXCLUDES every record, so "orders over $50" reads as "you have never
-  #     spent over $50".
-  # It also runs the real query under a sentinel customer id (a non-empty result
-  # would mean the per-customer scope has stopped holding, the one failure here
-  # that shows too MUCH rather than too little), the live tab's Firestore query
-  # (which needs its own composite index), and the export's metrics producer.
-  #
-  # No completion is ever billed — the one model call is a metadata retrieve
-  # confirming the search box's parser model still exists, because a retired one
-  # degrades to plain text matching without erring.
-  #
-  # Added 2026-08-11: the same text fallback the driver check covers. The search
-  # parser leaves unclassifiable prose in the query ("that big order that took
-  # forever" leaves "took forever"), and removeWordsIfNoResults:"allOptional"
-  # does NOT rescue it — it only relaxes the AND between words to an OR, so a
-  # phrase where no word matches anything still returns nothing. The builder
-  # retries once without the text; the check runs the pair and compares counts.
-  # It samples a REAL shopper out of the index to do it, because this builder
-  # always applies its customerID scope and a fake id would make both halves
-  # agree at zero — a check that passes by matching nothing is worse than none.
-  # Skipped, not failed, on an index with no finished orders.
-  #
-  # Five sequential Algolia getSettings plus four searches, two Firestore reads
-  # and that model lookup, hence the wider bound than a single-query check.
-  # Measured ~570-890ms server-side warm, ~780ms with the fallback pair.
-  - name: Order History and Search
-    slug: customer-orders-flow
-    url: https://www.sarvabazaar.com/api/health/flow-customer-orders
-    maxResponseTime: 10000
-    headers:
-      - "Authorization: Bearer $HEALTH_CHECK_SECRET"
-
-  # A shopper's account page — the spending summary, the account age, and the
-  # per-address order counts that BOTH customer assistants now quote back when
-  # asked "how many orders went to my work address".
-  #
-  # Almost everything behind this page fails QUIETLY, which is what the check is
-  # built around:
-  #   - the per-address counter swallows a failed count deliberately, so the
-  #     page loses a usage line instead of failing to render. The cost is that
-  #     the count failing for EVERY address at once returns a perfectly
-  #     well-formed empty result, indistinguishable from "this shopper has never
-  #     ordered". The check re-runs that same counter in strict mode, so the
-  #     failure has somewhere to surface;
-  #   - those counts match an order's recorded delivery address against the
-  #     saved one, so if checkout ever stops recording it, every address reads
-  #     "no orders yet" forever and nothing errors anywhere. A sample of recent
-  #     orders is checked for that field — sampled rather than one order,
-  #     because a pickup order legitimately carries no delivery address;
-  #   - every derived figure is legitimately zero for the sentinel account the
-  #     check runs against, so the arithmetic — the spend breakdown, the
-  #     averages, each store's share of spend — is re-run over a fixture with
-  #     real numbers in it. Otherwise that half of the check could not fail.
-  # It also confirms a profile for nobody comes back empty, which is the one
-  # failure here that shows too MUCH rather than too little.
-  #
-  # The lifetime totals underneath are NOT re-verified here — Customer Dashboard
-  # above already checks those field by field, off the same cached loader.
-  #
-  # Around seven Firestore round trips, so it shares the 5s bound of the other
-  # Firestore-backed flows. Measured ~290-440ms server-side warm, 680ms cold.
-  - name: Customer Profile
-    slug: customer-profile-flow
-    url: https://www.sarvabazaar.com/api/health/flow-customer-profile
-    maxResponseTime: 5000
-    headers:
-      - "Authorization: Bearer $HEALTH_CHECK_SECRET"
-
-  - name: Guest Order Lookup
-    slug: guest-order-lookup-flow
-    url: https://www.sarvabazaar.com/api/health/flow-guest-order-lookup
-    maxResponseTime: 8000
-    headers:
-      - "Authorization: Bearer $HEALTH_CHECK_SECRET"
-
-  # ---------------- Safeguards, which fail without failing ----------------
-  # Five checks with one thing in common: the thing they watch is designed to
-  # stay quiet, so when it breaks nothing throws, nothing logs, and every
-  # outward sign is identical to it working correctly. None of them can be
-  # covered by a build-time test, because each asserts something about the
-  # DEPLOYED runtime or the LIVE collection rather than about the source.
-
-  # New accounts still being written the way sign-in reads them.
-  #
-  # A signup path that stops writing one of these rows still produces an account
-  # that looks perfect — the auth record is created, the user lands in the
-  # portal, because the signup session is already authenticated. The break
-  # surfaces only when that person signs out and comes back, and only for
-  # accounts created since; everyone who signed up earlier is fine, Firestore is
-  # fine, Auth is fine, and nothing anywhere logs. So this samples the NEWEST
-  # account in each collection, which is where a broken signup shows up first
-  # and, for a while, only.
-  #
-  # It also probes the sign-in endpoint with a deliberately malformed token. A
-  # token-validation error is the HEALTHY answer: reaching that point means the
-  # request cleared both the API key and App Check enforcement. What that
-  # defends is the key itself — rotate it without redeploying and Vercel keeps
-  # serving the old one baked in at build time, and every sign-in in the app
-  # answers "API key not valid". No account is created and none is touched.
-  - name: New Account Sign-In
-    slug: auth-nav-flow
-    url: https://www.sarvabazaar.com/api/health/flow-auth-nav
-    maxResponseTime: 8000
-    headers:
-      - "Authorization: Bearer $HEALTH_CHECK_SECRET"
-
-  # A refusal must not answer a question the caller was not entitled to ask.
-  #
-  # "That does not exist" and "that exists but is not yours" have to be the same
-  # response, or the pair is an enumeration oracle: you never read the row, but
-  # you learn it is real, for every id you care to try. Two things here exist
-  # only once deployed, which is why a test cannot stand in for it — what the
-  # admin doors ACTUALLY answer (three internet-reachable routes behind one
-  # shared secret, where a regression to 401 is a perfectly valid response that
-  # nobody would notice until someone was scanning us), and whether the 403 and
-  # 404 paths are still the same function in the shipped bundle rather than two
-  # that a transform allowed to drift apart.
-  - name: Private Data Protection
-    slug: authz-masking-flow
-    url: https://www.sarvabazaar.com/api/health/flow-authz-masking
-    maxResponseTime: 8000
-    headers:
-      - "Authorization: Bearer $HEALTH_CHECK_SECRET"
-
-  # What a failure is allowed to say to a person, graded against the deployed
-  # build rather than the source.
-  #
-  # Two runtime-only failures. A route can start returning the raw SDK message
-  # in a 500 body — a middleware, a wrapper or a framework default putting back
-  # what the source carefully logs instead of returns — and a response carrying
-  # "Missing or insufficient permissions." is still a perfectly valid response,
-  # so nothing catches it. And the friendly-message table is a plain lookup, so
-  # a bad tree-shake that drops the module leaves every call returning its
-  # fallback: no error, no crash, just every message in the app going generic at
-  # once. Errors are provoked with malformed input, never with anything that
-  # writes. It is the slowest check here because it makes real HTTP requests to
-  # our own routes and waits for each to fail.
-  - name: Error Messages
-    slug: error-messages-flow
-    url: https://www.sarvabazaar.com/api/health/flow-error-messages
-    maxResponseTime: 15000
-    headers:
-      - "Authorization: Bearer $HEALTH_CHECK_SECRET"
-
-  # The rate limiter is deliberately fail-open — if its store is unreachable it
-  # allows the request and logs a warning, because a limiter that 500s takes
-  # down the whole API surface it was meant to protect. That choice is the
-  # entire reason this row exists: every way the limiter breaks looks exactly
-  # like the limiter working.
-  #
-  # A store it cannot reach degrades every durable tier to per-instance memory,
-  # which on a serverless deploy makes the real ceiling (limit x warm lambdas) —
-  # voice and payment stop being bounded and nothing says so. Buckets that never
-  # reject (a bad refill, a limit raised to something absurd, a policy table
-  # edited to zero rules) are indistinguishable from low traffic. Run against a
-  # synthetic tier, so no real caller's quota is touched.
-  - name: Request Rate Limits
-    slug: rate-limit-flow
-    url: https://www.sarvabazaar.com/api/health/flow-rate-limit
-    maxResponseTime: 5000
-    headers:
-      - "Authorization: Bearer $HEALTH_CHECK_SECRET"
-
-  # The daily AI budget, fail-open for the same reason and with the same
-  # consequence: a budget that 500s takes down every assistant surface it was
-  # meant to protect, so when it breaks it breaks silently.
-  #
-  # An unreachable store reports "cannot tell" and allows everything, forever,
-  # leaving the rate limiter as the only remaining ceiling. Charges that stop
-  # landing are swallowed by design — losing a charge must never fail the
-  # request that earned it — so spend can stop accumulating while every request
-  # still succeeds. A mispriced or unpriced model makes real usage cost nothing.
-  # And a budget misconfigured to zero, or to less than one voice session, locks
-  # a whole role out of a feature with no error anywhere. Checked against the
-  # live collection and the live price table, not a fake store.
-  - name: AI Usage Limits
-    slug: quota-flow
-    url: https://www.sarvabazaar.com/api/health/flow-quota
-    maxResponseTime: 5000
-    headers:
-      - "Authorization: Bearer $HEALTH_CHECK_SECRET"
-
-  # The two write-through caches that keep AI enrichment affordable: one holding
-  # a vector per search phrase, one holding a web answer per product question.
-  # Both are retired by a Firestore TTL policy, which is configured in the
-  # console rather than in the repo — so the code can be entirely correct while
-  # nothing is deleting anything, for months, with no error anywhere. That is
-  # the whole reason this row exists.
-  #
-  # Every other way these caches fail is visible in the bill: one that stops
-  # answering shows up as spend, one that stops storing shows up as spend. One
-  # that stops EXPIRING shows up as nothing at all. Goes red when rows are days
-  # past their expiry and still present (no policy attached, or attached to the
-  # wrong field), or when a large number of rows carry no expiry stamp at all
-  # and so cannot be reached by any policy. Counts index entries rather than
-  # reading documents, and runs on the slow interval — this is a growth signal,
-  # not an outage.
-  - name: Cache Cleanup
-    slug: cache-hygiene
-    url: https://www.sarvabazaar.com/api/health/flow-cache-hygiene
-    maxResponseTime: 10000
-    headers:
-      - "Authorization: Bearer $HEALTH_CHECK_SECRET"
-
-  # Are the security rules actually serving traffic still the ones we wrote?
-  # Rules are the ONE part of this system deployable from outside the repo —
-  # the console has an editor and any checkout can `firebase deploy`. On
-  # 2026-08-15 the live Firestore ruleset was a fork present in no commit,
-  # carrying an inventory field whitelist that omitted the two timestamps every
-  # edit stamps; every vendor inventory edit was denied for a day while the
-  # repo, the code and the tests were all correct, and the only symptom was
-  # support mail. Nothing inside the deployment can see that, so this check
-  # asks Firebase directly: it resolves the released Firestore and Storage
-  # rulesets over the Rules API and re-checks the clauses that must not
-  # disappear. Grades meaning, not bytes — a console edit that adds a
-  # collection is not an outage; one that drops the inventory allowlist, breaks
-  # the index-delete escape that keeps phone changes working, or reopens bucket
-  # listing is. Slow interval: three HTTPS calls, and a ruleset only changes
-  # when somebody deploys one.
-  - name: Security Rules
-    slug: security-rules
-    url: https://www.sarvabazaar.com/api/health/flow-security-rules
-    maxResponseTime: 10000
-    headers:
-      - "Authorization: Bearer $HEALTH_CHECK_SECRET"
-
-  # ---------------- Upstream vendor status, checked directly ----------------
-  # "Is it them or us" when one of our own checks above goes red.
-  #
-  # Each row watches ONE named component of a provider's status page — the
-  # specific API surface this app calls — rather than the page's overall
-  # indicator. The overall indicator is an OR across everything the provider
-  # sells: OpenAI's rolls in Sora, ChatGPT Atlas, Codex and the GPT store, and
-  # Vercel's rolls in twenty CDN cities plus v0. None of those are reachable
-  # from this app, so a red there was a red here that no customer could ever
-  # feel, and a real degradation of the one surface we DO use was averaged into
-  # the same green as everything else.
-  #
-  # Mechanism: Upptime supports a single body assertion per monitor, so each
-  # component gets its own row, keyed to the exact JSON pair Statuspage emits
-  # (`"name":"X","status":"operational"` with no whitespace between them).
-  # Every substring below was confirmed against the live payload to appear
-  # exactly once, so none of them can be satisfied by a different component's
-  # entry.
-  #
-  # Confirmed by direct request (not assumed) which providers expose what:
-  #   - OpenAI, Vercel, GitHub: Statuspage.io, per-component at
-  #     /api/v2/components.json
-  #   - Algolia: its own API at /1/status, per CLUSTER — narrower than a
-  #     component, since it names the machines this account is actually on
-  #   - EmailJS: Better Stack at /index.json, whole-page state only (see below)
-  #   - Stripe: no machine-readable status at all (see below)
-
-  # --- OpenAI: the four API surfaces this app calls, and nothing else ---
-  # Everything else on that page (ChatGPT, Sora, Codex, Atlas, GPTs, Ads,
-  # FedRAMP, fine-tuning, image generation) is a product we do not use.
-
-  # Every text engine — all four copilots and the four voice modes' tool calls.
   - name: OpenAI Chat
     slug: upstream-open-ai-status
     url: https://status.openai.com/api/v2/components.json
@@ -1005,6 +334,31 @@ sites:
     slug: upstream-git-hub-pages
     url: https://www.githubstatus.com/api/v2/components.json
     __dangerous__body_down_if_text_missing: '"name":"Pages","status":"operational"'
+
+  # --- Google: the platform everything else here runs on ---
+  # Firestore, Auth, Storage, App Check and Cloud Functions are the backbone of
+  # this app and no Google or Firebase incident feed was watched anywhere.
+  #
+  # These two need our own route rather than a direct URL like every other
+  # upstream row, because Google publishes an incident ARRAY with no overall
+  # verdict — health means "nothing currently open affecting a product we use",
+  # which is a filter and a negation, and Upptime's assertion is a plain
+  # substring match. `strict=1` makes an open incident a 503 so the row goes red;
+  # without it the route reports and stays green.
+
+  - name: Firebase Platform
+    slug: upstream-firebase-status
+    url: https://www.sarvabazaar.com/api/health/vendor-status?vendor=firebase&strict=1
+    maxResponseTime: 10000
+    headers:
+      - "Authorization: Bearer $HEALTH_CHECK_SECRET"
+
+  - name: Google Maps Platform
+    slug: upstream-google-maps-status
+    url: https://www.sarvabazaar.com/api/health/vendor-status?vendor=maps&strict=1
+    maxResponseTime: 10000
+    headers:
+      - "Authorization: Bearer $HEALTH_CHECK_SECRET"
 
   # --- Algolia: the one cluster this account's indices live on ---
   # /1/status reports all ~300 shared clusters. Ours is c23-usw, resolved from
@@ -1458,84 +812,28 @@ status-website:
       content: "Product images and uploaded documents.";
     }
 
-    section.live-status article:has(a[href$="/history/search-algolia"]) h4::after {
-      content: "Search and autocomplete across the catalog, provided by Algolia.";
-    }
-
     section.live-status article:has(a[href$="/history/ai-open-ai"]) h4::after {
       content: "Voice ordering and the AI shopping assistant, provided by OpenAI.";
-    }
-
-    section.live-status article:has(a[href$="/history/maps"]) h4::after {
-      content: "Address lookup and delivery route planning.";
     }
 
     section.live-status article:has(a[href$="/history/support-git-hub-api"]) h4::after {
       content: "Publication of incident reports shown on this page.";
     }
 
-    section.live-status article:has(a[href$="/history/email-alerts-config"]) h4::after {
-      content: "Order confirmations and alert emails.";
+    section.live-status article:has(a[href$="/history/traffic-shop-search"]) h4::after {
+      content: "Real shoppers' catalog searches succeeding, measured on their requests rather than ours.";
     }
 
-    section.live-status article:has(a[href$="/history/pricing-flow"]) h4::after {
-      content: "Totals, delivery fees and taxes calculated on an order.";
+    section.live-status article:has(a[href$="/history/traffic-item-search"]) h4::after {
+      content: "Real item lookups succeeding, measured on their requests rather than ours.";
     }
 
-    section.live-status article:has(a[href$="/history/checkout-flow"]) h4::after {
-      content: "Full purchase path from basket through to payment.";
+    section.live-status article:has(a[href$="/history/upstream-firebase-status"]) h4::after {
+      content: "Google reporting no open incident on the Firebase services this app runs on.";
     }
 
-    section.live-status article:has(a[href$="/history/checkout-stock-flow"]) h4::after {
-      content: "Stock held while an order is paid for, and returned if it is not.";
-    }
-
-    section.live-status article:has(a[href$="/history/search-flow"]) h4::after {
-      content: "A live search query returning catalog results.";
-    }
-
-    section.live-status article:has(a[href$="/history/shop-search-flow"]) h4::after {
-      content: "Category and shop filters, and the order products are sorted in.";
-    }
-
-    section.live-status article:has(a[href$="/history/semantic-search-flow"]) h4::after {
-      content: "Matching everyday wording to the right products.";
-    }
-
-    section.live-status article:has(a[href$="/history/assistants-flow"]) h4::after {
-      content: "Product and order lookups the voice and chat assistants rely on.";
-    }
-
-    section.live-status article:has(a[href$="/history/order-flow"]) h4::after {
-      content: "Orders moving between stages as they are confirmed, picked up and delivered.";
-    }
-
-    section.live-status article:has(a[href$="/history/order-confirmation-flow"]) h4::after {
-      content: "The receipt page shown once an order is placed.";
-    }
-
-    section.live-status article:has(a[href$="/history/webhooks-flow"]) h4::after {
-      content: "Refunds, disputes and payment changes reaching an order.";
-    }
-
-    section.live-status article:has(a[href$="/history/payouts-flow"]) h4::after {
-      content: "Money owed reaching shop owners and drivers after delivery.";
-    }
-
-    section.live-status article:has(a[href$="/history/vendor-metrics-flow"]) h4::after {
-      content: "Sales and inventory figures shown to shop owners.";
-    }
-
-    section.live-status article:has(a[href$="/history/driver-metrics-flow"]) h4::after {
-      content: "Earnings and delivery figures shown to drivers.";
-    }
-
-    section.live-status article:has(a[href$="/history/customer-metrics-flow"]) h4::after {
-      content: "Order history and account details for customers.";
-    }
-
-    section.live-status article:has(a[href$="/history/guest-order-lookup-flow"]) h4::after {
-      content: "Order retrieval from an order number and email address.";
+    section.live-status article:has(a[href$="/history/upstream-google-maps-status"]) h4::after {
+      content: "Google reporting no open incident on the Maps services used for addresses.";
     }
 
     section.live-status article:has(a[href$="/history/scheduled-functions"]) h4::after {
@@ -1566,60 +864,12 @@ status-website:
       content: "Orders copied to the public record the tracking pages read.";
     }
 
-    section.live-status article:has(a[href$="/history/payouts-page-flow"]) h4::after {
-      content: "Earnings pages shown to shop owners and drivers.";
-    }
-
     section.live-status article:has(a[href$="/history/payouts-orders-auth"]) h4::after {
       content: "Payout history refused to anyone not signed in.";
     }
 
     section.live-status article:has(a[href$="/history/payouts-session-auth"]) h4::after {
       content: "Payout account setup refused to anyone not signed in.";
-    }
-
-    section.live-status article:has(a[href$="/history/driver-report-flow"]) h4::after {
-      content: "The earnings report drivers download for their records.";
-    }
-
-    section.live-status article:has(a[href$="/history/driver-compliance-flow"]) h4::after {
-      content: "Licence, insurance and registration checked before a driver takes a job.";
-    }
-
-    section.live-status article:has(a[href$="/history/driver-orders-flow"]) h4::after {
-      content: "A driver's deliveries board and the search across completed jobs.";
-    }
-
-    section.live-status article:has(a[href$="/history/customer-orders-flow"]) h4::after {
-      content: "Past orders, and searching through them in plain language.";
-    }
-
-    section.live-status article:has(a[href$="/history/customer-profile-flow"]) h4::after {
-      content: "Account details, saved addresses and the spending summary.";
-    }
-
-    section.live-status article:has(a[href$="/history/shop-hours-flow"]) h4::after {
-      content: "Whether a shop counts as open, in its own local time, before an order is taken.";
-    }
-
-    section.live-status article:has(a[href$="/history/auth-nav-flow"]) h4::after {
-      content: "Whether an account created today can still sign in tomorrow.";
-    }
-
-    section.live-status article:has(a[href$="/history/authz-masking-flow"]) h4::after {
-      content: "Refusals that give nothing away about data you are not entitled to see.";
-    }
-
-    section.live-status article:has(a[href$="/history/error-messages-flow"]) h4::after {
-      content: "Failures explained in plain language, with no internal detail leaked.";
-    }
-
-    section.live-status article:has(a[href$="/history/rate-limit-flow"]) h4::after {
-      content: "Limits that keep voice, payment and assistant requests within bounds.";
-    }
-
-    section.live-status article:has(a[href$="/history/quota-flow"]) h4::after {
-      content: "The daily budget that keeps AI and voice usage within its ceiling.";
     }
 
     section.live-status article:has(a[href$="/history/upstream-open-ai-status"]) h4::after {
