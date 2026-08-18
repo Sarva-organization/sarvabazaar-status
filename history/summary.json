@@ -680,7 +680,7 @@
     "slug": "upstream-git-hub-status",
     "status": "up",
     "uptime": "92.60%",
-    "uptimeDay": "27.38%",
+    "uptimeDay": "27.35%",
     "uptimeWeek": "87.81%",
     "uptimeMonth": "92.60%",
     "uptimeYear": "92.60%",
@@ -696,7 +696,7 @@
       "2026-08-09": 69,
       "2026-08-11": 122,
       "2026-08-13": 61,
-      "2026-08-18": 447,
+      "2026-08-18": 448,
       "2026-08-17": 598
     }
   },
@@ -726,18 +726,18 @@
     "icon": "https://icons.duckduckgo.com/ip3/www.githubstatus.com.ico",
     "slug": "upstream-git-hub-pages",
     "status": "up",
-    "uptime": "71.76%",
-    "uptimeDay": "33.89%",
-    "uptimeWeek": "71.76%",
-    "uptimeMonth": "71.76%",
-    "uptimeYear": "71.76%",
+    "uptime": "71.75%",
+    "uptimeDay": "33.86%",
+    "uptimeWeek": "71.75%",
+    "uptimeMonth": "71.75%",
+    "uptimeYear": "71.75%",
     "time": 47,
     "timeDay": 49,
     "timeWeek": 47,
     "timeMonth": 47,
     "timeYear": 47,
     "dailyMinutesDown": {
-      "2026-08-18": 447,
+      "2026-08-18": 448,
       "2026-08-17": 505
     }
   },
