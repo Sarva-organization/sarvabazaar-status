@@ -405,7 +405,7 @@
     "slug": "scheduled-functions",
     "status": "down",
     "uptime": "98.70%",
-    "uptimeDay": "97.94%",
+    "uptimeDay": "97.91%",
     "uptimeWeek": "98.34%",
     "uptimeMonth": "98.70%",
     "uptimeYear": "98.70%",
@@ -445,8 +445,8 @@
     "slug": "reconcile-failed-transfers",
     "status": "down",
     "uptime": "99.77%",
-    "uptimeDay": "97.95%",
-    "uptimeWeek": "99.71%",
+    "uptimeDay": "97.92%",
+    "uptimeWeek": "99.70%",
     "uptimeMonth": "99.77%",
     "uptimeYear": "99.77%",
     "time": 186,
@@ -455,7 +455,7 @@
     "timeMonth": 186,
     "timeYear": 186,
     "dailyMinutesDown": {
-      "2026-08-18": 29
+      "2026-08-18": 30
     }
   },
   {
