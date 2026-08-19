@@ -1,7 +1,7 @@
 url: https://www.sarvabazaar.com/api/health/functions?job=reconcileFailedTransfers
 status: down
 code: 503
-responseTime: 196
-lastUpdated: 2026-08-19T00:02:20.508Z
+responseTime: 98
+lastUpdated: 2026-08-19T03:49:57.612Z
 startTime: 2026-08-09T21:25:37.326Z
 generator: Upptime <https://github.com/upptime/upptime>
