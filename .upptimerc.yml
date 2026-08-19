@@ -142,23 +142,7 @@ sites:
     headers:
       - "Authorization: Bearer $HEALTH_CHECK_SECRET"
 
-  - name: Item Search (live traffic)
-    slug: traffic-item-search
-    url: https://www.sarvabazaar.com/api/health/traffic?signal=item-search
-    maxResponseTime: 5000
-    headers:
-      - "Authorization: Bearer $HEALTH_CHECK_SECRET"
 
-  # One row for three signals, not three rows. They share a failure mode — an
-  # order that cannot move — and splitting them would put three near-identical
-  # amber lights on a public board to say the same thing. The response body
-  # names which of the three is failing.
-  - name: Order Handover (live traffic)
-    slug: traffic-order-lifecycle
-    url: https://www.sarvabazaar.com/api/health/traffic?signal=order-pickup,order-deliver,order-cancel
-    maxResponseTime: 5000
-    headers:
-      - "Authorization: Bearer $HEALTH_CHECK_SECRET"
 
   # The one path whose own failure cannot be reported through itself: this IS
   # the reporting channel. Rare enough that it will usually read idle, which is
@@ -847,20 +831,12 @@ status-website:
       content: "Publication of incident reports shown on this page.";
     }
 
-    section.live-status article:has(a[href$="/history/traffic-order-lifecycle"]) h4::after {
-      content: "Drivers and shops moving real orders through pickup, delivery and cancellation.";
-    }
-
     section.live-status article:has(a[href$="/history/traffic-support-ticket"]) h4::after {
       content: "Support requests from real people reaching us successfully.";
     }
 
     section.live-status article:has(a[href$="/history/traffic-shop-search"]) h4::after {
       content: "Real shoppers' catalog searches succeeding, measured on their requests rather than ours.";
-    }
-
-    section.live-status article:has(a[href$="/history/traffic-item-search"]) h4::after {
-      content: "Real item lookups succeeding, measured on their requests rather than ours.";
     }
 
     section.live-status article:has(a[href$="/history/upstream-firebase-status"]) h4::after {
