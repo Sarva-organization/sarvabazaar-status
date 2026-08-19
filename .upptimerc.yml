@@ -334,24 +334,30 @@ sites:
   # --- GitHub: the three components this status page itself runs on ---
   # All three are about monitoring rather than the shop: if they fail, the shop
   # is fine and THIS PAGE is the thing that has stopped telling the truth.
+  #
+  # Named for what they DO rather than who provides them, because the name is
+  # what a customer reads. On 2026-08-17 GitHub had a bad day and this page told
+  # shoppers "GitHub Pages is down" while the marketplace was working perfectly
+  # — an incident title about our own monitoring, phrased as if the shop had
+  # failed. Slugs are deliberately unchanged: they key the uptime history.
 
   # Runs the monitor. If Actions stops, every row here silently freezes at its
   # last known value rather than going red.
-  - name: GitHub Actions
+  - name: Status Page Monitor
     slug: upstream-git-hub-status
     url: https://www.githubstatus.com/api/v2/components.json
     __dangerous__body_down_if_text_missing: '"name":"Actions","status":"operational"'
 
   # Files incidents and posts the summary — also what our own Incident Reporting
   # check above calls.
-  - name: GitHub API
+  - name: Status Page Reporting
     slug: upstream-git-hub-api
     url: https://www.githubstatus.com/api/v2/components.json
     __dangerous__body_down_if_text_missing: '"name":"API Requests","status":"operational"'
 
   # Serves status.sarvabazaar.com. A red here means you are unlikely to be
   # reading this.
-  - name: GitHub Pages
+  - name: Status Page Hosting
     slug: upstream-git-hub-pages
     url: https://www.githubstatus.com/api/v2/components.json
     __dangerous__body_down_if_text_missing: '"name":"Pages","status":"operational"'
