@@ -1,7 +1,7 @@
 url: https://www.sarvabazaar.com/api/health/triggers?check=order-mirror
 status: up
 code: 200
-responseTime: 223
-lastUpdated: 2026-09-18T01:05:31.691Z
+responseTime: 154
+lastUpdated: 2026-09-19T01:00:38.046Z
 startTime: 2026-08-09T21:25:51.401Z
 generator: Upptime <https://github.com/upptime/upptime>
