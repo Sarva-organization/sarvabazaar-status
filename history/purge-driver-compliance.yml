@@ -1,7 +1,7 @@
 url: https://www.sarvabazaar.com/api/health/functions?job=purgeDriverComplianceData
 status: up
 code: 200
-responseTime: 149
-lastUpdated: 2026-09-25T01:12:45.551Z
+responseTime: 391
+lastUpdated: 2026-09-26T01:15:16.427Z
 startTime: 2026-08-12T22:09:11.698Z
 generator: Upptime <https://github.com/upptime/upptime>
