@@ -1,7 +1,7 @@
 url: https://www.sarvabazaar.com/api/health/vendor-status?vendor=maps&strict=1
 status: up
 code: 200
-responseTime: 187
-lastUpdated: 2026-10-26T01:01:48.707Z
+responseTime: 167
+lastUpdated: 2026-10-27T01:53:18.979Z
 startTime: 2026-08-18T07:26:46.352Z
 generator: Upptime <https://github.com/upptime/upptime>
