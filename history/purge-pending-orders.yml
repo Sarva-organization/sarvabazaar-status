@@ -1,7 +1,7 @@
 url: https://www.sarvabazaar.com/api/health/functions?job=purgeStalePendingOrders
 status: up
 code: 200
-responseTime: 220
-lastUpdated: 2026-10-27T01:51:44.251Z
+responseTime: 128
+lastUpdated: 2026-10-28T02:03:08.092Z
 startTime: 2026-08-09T21:25:36.975Z
 generator: Upptime <https://github.com/upptime/upptime>
