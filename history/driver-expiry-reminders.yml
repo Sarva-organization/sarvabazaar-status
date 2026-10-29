@@ -1,7 +1,7 @@
 url: https://www.sarvabazaar.com/api/health/functions?job=driverExpiryReminders
-status: down
-code: 503
-responseTime: 236
-lastUpdated: 2026-10-29T02:12:37.972Z
+status: up
+code: 200
+responseTime: 122
+lastUpdated: 2026-10-29T18:44:20.439Z
 startTime: 2026-08-12T22:08:56.621Z
 generator: Upptime <https://github.com/upptime/upptime>
