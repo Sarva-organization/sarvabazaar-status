@@ -1,7 +1,7 @@
 url: https://www.sarvabazaar.com/api/health/vendor-status?vendor=firebase&strict=1
 status: up
 code: 200
-responseTime: 199
-lastUpdated: 2026-11-19T04:00:08.558Z
+responseTime: 124
+lastUpdated: 2026-11-20T03:53:33.143Z
 startTime: 2026-08-18T07:26:45.728Z
 generator: Upptime <https://github.com/upptime/upptime>
